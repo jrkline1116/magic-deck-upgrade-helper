@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Upgrade Scraper — Commander deck upgrades</title>
+<meta name="description" content="Import your Commander decks and find upgrades from new card releases, with prices.">
+<meta name="theme-color" content="#1E2129">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1E2129; --panel:#272B35; --panel2:#2F3440; --line:#3C4250;
+  --ink:#ECE6D8; --muted:#A9A597; --gold:#D6B25E; --gold-ink:#1E2129;
+  --cheaper:#63BCAD; --stronger:#A993E8; --synergy:#E3A55C; --played:#8FB4E0;
+  --danger:#E07A6A;
+  --serif:"Alegreya",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg);scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 var(--sans);-webkit-font-smoothing:antialiased;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+a{color:var(--gold)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;padding:0 18px}
+
+/* Header */
+header.top{padding:28px 0 0}
+.brand{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.brand h1{font:800 clamp(2.1rem,6vw,3rem)/1 var(--serif);margin:0;letter-spacing:-.01em}
+.brand p{margin:0 0 4px;color:var(--muted);max-width:40ch}
+nav.tabs{display:flex;gap:4px;margin-top:22px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav.tabs button{background:none;border:0;padding:10px 14px 12px;color:var(--muted);font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+section.view{display:none;padding:26px 0}
+section.view.on{display:block}
+
+h2{font:700 1.55rem/1.2 var(--serif);margin:0 0 12px}
+h3{font:700 1.2rem/1.25 var(--serif);margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+.block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+label.f{display:block;font-weight:600;margin:14px 0 6px}
+label.f:first-child{margin-top:0}
+input[type=text],input[type=url],input[type=password],input[type=number],input[type=date],select,textarea{
+  width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+textarea{min-height:170px;resize:vertical;font-size:.95rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row > *{flex:1 1 auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);padding:10px 16px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:none}
+.btn.danger{color:var(--danger);background:none}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.big{padding:13px 22px;font-size:1.05rem;width:100%}
+.or{text-align:center;color:var(--muted);margin:12px 0}
+.note{border-left:3px solid var(--gold);padding:8px 12px;background:var(--panel2);border-radius:0 8px 8px 0;margin:12px 0}
+.err{border-left-color:var(--danger)}
+
+/* Deck list */
+.decks{display:grid;gap:10px;margin-bottom:22px}
+.deck{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.deck .info{flex:1;min-width:0}
+.deck .name{font:700 1.1rem var(--serif)}
+.deck .meta{color:var(--muted);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted)}
+
+.cmdpick{display:grid;gap:6px;margin-top:6px}
+.cmdpick label{display:flex;gap:10px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer}
+
+/* Mode picker */
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mode{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;text-align:left;cursor:pointer}
+.mode strong{display:block;font:700 1.05rem var(--serif)}
+.mode span{display:block;color:var(--muted);font-size:.86rem;line-height:1.35;margin-top:2px}
+.mode[aria-pressed="true"]{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+@media (max-width:560px){.modes{grid-template-columns:1fr}}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:4px 12px;cursor:pointer;font-size:.9rem}
+.engine{display:grid;gap:8px}
+.engine label{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;cursor:pointer}
+.engine label.disabled{opacity:.55;cursor:not-allowed}
+.engine input{margin-top:5px}
+
+/* Progress */
+.progress{margin-top:16px;display:none}
+.progress.on{display:block}
+.bar{height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--gold);transition:width .3s}
+.status{margin-top:8px;color:var(--muted);font-size:.95rem}
+
+/* Report */
+.report-head{margin:28px 0 6px}
+.role{margin-top:26px}
+.role > h3{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.role > h3 small{font:600 .9rem var(--sans);color:var(--muted)}
+.swap{display:grid;grid-template-columns:auto 1fr;gap:18px;padding:18px 0;border-bottom:1px solid var(--line)}
+.pair{display:flex;align-items:center;position:relative;width:212px}
+.pair .card{width:124px;border-radius:6.5px;display:block;background:var(--panel2);aspect-ratio:488/680}
+.pair .out{width:96px;opacity:.55;transform:rotate(-6deg);filter:grayscale(.6);margin-right:-8px;z-index:0}
+.pair .in{z-index:1;box-shadow:0 0 0 2px var(--gold),0 8px 20px rgba(0,0,0,.45)}
+.pair .solo{margin-left:44px}
+.pair .swapmark{position:absolute;left:78px;top:50%;transform:translateY(-50%);z-index:2;width:30px;height:30px;border-radius:50%;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center}
+.detail h4{font:700 1.2rem/1.2 var(--serif);margin:0}
+.detail .cut{color:var(--muted);margin:3px 0 8px;font-size:.95rem}
+.detail .why{margin:8px 0 10px;max-width:60ch}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:700;border-radius:99px;padding:2px 10px 2px 8px;border:1px solid currentColor}
+.tag::before{content:"";width:8px;height:8px;background:currentColor}
+.tag.cheaper{color:var(--cheaper)} .tag.cheaper::before{border-radius:50%}
+.tag.stronger{color:var(--stronger)} .tag.stronger::before{transform:rotate(45deg)}
+.tag.synergy{color:var(--synergy)} .tag.synergy::before{border-radius:2px}
+.tag.played,.tag.popular{color:var(--played)} .tag.played::before,.tag.popular::before{clip-path:polygon(50% 0,100% 100%,0 100%)}
+.price{font-weight:700;margin-left:8px}
+.links{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.95rem}
+.pick{display:inline-flex;gap:8px;align-items:center;font-weight:600;cursor:pointer;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 12px}
+.pick input{width:18px;height:18px;accent-color:var(--gold)}
+@media (max-width:560px){
+  .swap{grid-template-columns:1fr}
+  .pair{margin:0 auto}
+}
+
+/* Export bar */
+.exportbar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));transform:translateY(110%);transition:transform .25s}
+.exportbar.on{transform:none}
+.exportbar .wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.exportbar .count{flex:1 1 180px;font-weight:600}
+
+footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:99px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Upgrade Scraper</h1>
+      <p>Your Commander decks, checked against new cards. Cheaper mana, stronger effects, current prices.</p>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-view="decks" aria-selected="true">My decks</button>
+      <button role="tab" data-view="scan" aria-selected="false">Find upgrades</button>
+      <button role="tab" data-view="settings" aria-selected="false">Settings</button>
+    </nav>
+  </header>
+
+  <!-- DECKS -->
+  <section class="view on" id="view-decks">
+    <div id="deckList" class="decks"></div>
+
+    <div class="block" id="importBlock">
+      <h2>Import a deck</h2>
+      <label class="f" for="deckText">Paste a decklist</label>
+      <textarea id="deckText" placeholder="1 Sol Ring&#10;1 Arcane Signet&#10;1 Command Tower&#10;...&#10;&#10;Exports from Moxfield, Archidekt, MTGGoldfish and Arena all work. Put the commander under a “Commander” line, or pick it in the next step."></textarea>
+      <div class="or">or</div>
+      <label class="f" for="deckUrl">Archidekt deck link</label>
+      <input type="url" id="deckUrl" placeholder="https://archidekt.com/decks/123456/...">
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="importBtn">Import deck</button>
+      </div>
+      <div id="importMsg"></div>
+    </div>
+
+    <div class="block" id="reviewBlock" hidden>
+      <h2>Check the import</h2>
+      <label class="f" for="deckName">Deck name</label>
+      <input type="text" id="deckName">
+      <label class="f">Commander <span class="muted small">(pick up to 2 for partners)</span></label>
+      <div id="cmdPick" class="cmdpick"></div>
+      <div id="reviewMsg"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="saveDeckBtn">Save deck</button>
+        <button class="btn ghost" id="cancelImportBtn">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCAN -->
+  <section class="view" id="view-scan">
+    <div class="block">
+      <label class="f" for="scanDeck">Deck</label>
+      <select id="scanDeck"></select>
+
+      <label class="f">What to check</label>
+      <div class="modes" id="modes">
+        <button class="mode" data-mode="set" aria-pressed="true"><strong>New set</strong><span>Cards from one release, including its Commander precons.</span></button>
+        <button class="mode" data-mode="since" aria-pressed="false"><strong>Coming back</strong><span>Every new card printed since you last played.</span></button>
+        <button class="mode" data-mode="all" aria-pressed="false"><strong>Full review</strong><span>Any legal card. Best for a deck you just built.</span></button>
+      </div>
+
+      <div id="opt-set">
+        <label class="f" for="setSel">Set</label>
+        <select id="setSel"><option>Loading sets…</option></select>
+      </div>
+      <div id="opt-since" hidden>
+        <label class="f" for="sinceDate">Last played</label>
+        <input type="date" id="sinceDate">
+        <div class="chips">
+          <button class="chip" data-years="1">1 year ago</button>
+          <button class="chip" data-years="2">2 years ago</button>
+          <button class="chip" data-years="3">3 years ago</button>
+          <button class="chip" data-years="5">5 years ago</button>
+        </div>
+      </div>
+
+      <label class="f" for="priceCap">Max price per card <span class="muted small">(optional, USD)</span></label>
+      <input type="number" id="priceCap" min="0" step="0.5" placeholder="No limit">
+
+      <label class="f">How to judge upgrades</label>
+      <div class="engine">
+        <label><input type="radio" name="engine" value="rules" checked>
+          <span><strong>Free</strong><br><span class="muted small">Matches cards by role, mana cost and how often they're played. Instant, no account needed.</span></span></label>
+        <label id="aiEngineLabel"><input type="radio" name="engine" value="ai">
+          <span><strong>AI review</strong><br><span class="muted small" id="aiEngineNote">Reads the rules text and weighs synergy with your commander. Uses your own Anthropic API key.</span></span></label>
+      </div>
+
+      <button class="btn primary big" id="runBtn" style="margin-top:18px">Find upgrades</button>
+      <div class="progress" id="progress"><div class="bar"><i id="barFill"></i></div><div class="status" id="status"></div></div>
+    </div>
+
+    <div id="report"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="block">
+      <h2>AI review</h2>
+      <p class="muted">AI review is optional. It runs on your own Anthropic API key, which stays in this browser and is sent only to Anthropic. A typical scan costs a few cents.</p>
+      <label class="f" for="apiKey">Anthropic API key</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
+      <p class="small muted">Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a>.</p>
+      <label class="f" for="model">Model</label>
+      <input type="text" id="model">
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="saveKeyBtn">Save</button>
+        <button class="btn" id="testKeyBtn">Test key</button>
+        <button class="btn danger" id="clearKeyBtn">Remove key</button>
+      </div>
+      <div id="keyMsg"></div>
+    </div>
+    <div class="block">
+      <h2>Stored data</h2>
+      <p class="muted">Decks and card role tags are saved in this browser only. Clearing tags makes the next scan re-check each card's role.</p>
+      <div class="row">
+        <button class="btn" id="clearTagsBtn">Clear role tags</button>
+        <button class="btn" id="exportDecksBtn">Back up decks</button>
+        <label class="btn" for="restoreFile">Restore backup</label>
+        <input type="file" id="restoreFile" accept="application/json" hidden>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Card data, images and prices from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>. Prices are TCGplayer market in USD and can lag.
+    Upgrade Scraper is unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. Not approved or endorsed by Wizards.
+    <br><br>Find it useful? <a href="https://buymeacoffee.com/jrkline1116" target="_blank" rel="noopener">Buy me a coffee</a>.
+  </footer>
+</div>
+
+<div class="exportbar" id="exportBar">
+  <div class="wrap">
+    <div class="count" id="pickCount">0 picked</div>
+    <button class="btn" id="copyNamesBtn">Copy card names</button>
+    <button class="btn primary" id="csvBtn">Download CSV</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- Utilities ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+const frontName = s => String(s).split(/\s+\/\/?\s+/)[0].trim();
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} },
+  del(k){ try{ localStorage.removeItem(k); }catch{} }
+};
+const DEFAULT_MODEL = "claude-sonnet-5-5";
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2200); }
+function msg(el, text, isErr){ el.innerHTML = text ? `<div class="note ${isErr?"err":""}">${text}</div>` : ""; }
+
+/* ---------- Scryfall (throttled, ~2 requests/sec) ---------- */
+let sfNext = 0;
+async function sf(url, opts = {}, tries = 0){
+  const now = Date.now(); const at = Math.max(now, sfNext); sfNext = at + 550;
+  if (at > now) await sleep(at - now);
+  const headers = { "Accept": "application/json" };
+  if (opts.body) headers["Content-Type"] = "application/json";
+  let r;
+  try { r = await fetch(url, { ...opts, headers }); }
+  catch { throw new Error("Couldn't reach Scryfall. Check your connection and try again."); }
+  if (r.status === 429 && tries < 3){ await sleep(1500 * (tries + 1)); return sf(url, opts, tries + 1); }
+  const j = await r.json().catch(() => null);
+  if (r.status === 404 && j && j.code === "not_found") return { data: [] };
+  if (!r.ok){ const e = new Error(j?.details || `Scryfall returned ${r.status}`); e.status = r.status; throw e; }
+  return j;
+}
+async function sfSearch(q){
+  const url = "https://api.scryfall.com/cards/search?" + new URLSearchParams({ q, order: "edhrec", unique: "cards" });
+  const j = await sf(url);
+  return (j.data || []).map(slim);
+}
+// Try the full query; if Scryfall rejects it (e.g. a tag it doesn't know), use the simpler one.
+async function sfSearchSafe(q, fallbackQ){
+  try { return await sfSearch(q); }
+  catch(e){ if (e.status === 400 && fallbackQ) return sfSearch(fallbackQ); throw e; }
+}
+function slim(c){
+  const faces = c.card_faces || [];
+  const img = c.image_uris?.normal || faces[0]?.image_uris?.normal || "";
+  const oracle = c.oracle_text ?? faces.map(f => `${f.name}: ${f.oracle_text || ""}`).join(" // ");
+  const typeLine = c.type_line || faces.map(f => f.type_line).join(" // ");
+  return {
+    name: c.name, front: frontName(c.name),
+    cmc: c.cmc ?? 0,
+    cost: c.mana_cost ?? faces[0]?.mana_cost ?? "",
+    type: typeLine, frontType: typeLine.split(" // ")[0],
+    oracle: (oracle || "").slice(0, 500),
+    ci: c.color_identity || [],
+    rank: c.edhrec_rank ?? null,
+    usd: c.prices?.usd || c.prices?.usd_foil || c.prices?.usd_etched || null,
+    img, uri: c.scryfall_uri, tcg: c.purchase_uris?.tcgplayer || null,
+    legal: c.legalities?.commander
+  };
+}
+async function lookupCards(names){
+  const idx = new Map(); let notFound = [];
+  const run = async list => {
+    for (let i = 0; i < list.length; i += 75){
+      const chunk = list.slice(i, i + 75);
+      const j = await sf("https://api.scryfall.com/cards/collection", { method: "POST", body: JSON.stringify({ identifiers: chunk.map(name => ({ name })) }) });
+      for (const c of j.data || []){ const s = slim(c); idx.set(norm(s.name), s); idx.set(norm(s.front), s); }
+      notFound.push(...(j.not_found || []).map(n => n.name));
+    }
+  };
+  await run(names);
+  const retry = notFound.filter(n => frontName(n) !== n).map(frontName);
+  notFound = notFound.filter(n => frontName(n) === n);
+  if (retry.length) await run(retry);
+  const get = n => idx.get(norm(n)) || idx.get(norm(frontName(n)));
+  return { get, missing: names.filter(n => !get(n)) };
+}
+
+/* ---------- Decklist parsing ---------- */
+function parseList(text){
+  const map = new Map(); let section = "main";
+  for (const raw of text.split(/\r?\n/)){
+    let line = raw.trim(); if (!line) continue;
+    const head = line.replace(/^\/\/\s*/, "").replace(/:$/, "").trim().toLowerCase();
+    if (/^commanders?$/.test(head)){ section = "cmd"; continue; }
+    if (/^(deck|main|mainboard|companion|about)$/.test(head)){ section = "main"; continue; }
+    if (/^(sideboard|maybeboard|considering|tokens?)$/.test(head)){ section = "skip"; continue; }
+    if (/^(\/\/|#|name\s)/i.test(line)) continue;
+    if (section === "skip") continue;
+    let isCmd = section === "cmd" || /\*CMDR\*|\[commander/i.test(line);
+    if (/\[(maybeboard|sideboard)/i.test(line)) continue;
+    line = line.replace(/\[[^\]]*\]/g, "").replace(/\^[^^]*\^/g, "").replace(/\*[A-Z]+\*/g, "").trim();
+    let qty = 1, name = line;
+    const m = line.match(/^(\d+)\s*x?\s+(.+)$/i);
+    if (m){ qty = +m[1]; name = m[2]; }
+    name = name.replace(/\s+\([A-Za-z0-9_]{2,8}\)(\s+\S+)?\s*$/, "").replace(/\s+#\S+$/, "").trim();
+    if (!name) continue;
+    const key = norm(name);
+    const prev = map.get(key);
+    if (prev){ prev.qty += qty; prev.cmd = prev.cmd || isCmd; }
+    else map.set(key, { name, qty, cmd: isCmd });
+  }
+  return [...map.values()];
+}
+async function importArchidekt(url){
+  const id = url.match(/archidekt\.com\/(?:api\/)?decks\/(\d+)/i)?.[1];
+  if (!id) throw new Error("That doesn't look like an Archidekt deck link.");
+  let j;
+  try {
+    const r = await fetch(`https://archidekt.com/api/decks/${id}/`);
+    if (!r.ok) throw 0;
+    j = await r.json();
+  } catch {
+    throw new Error("Archidekt didn't allow a direct import from this browser. On the deck page, choose Export, copy the text, and paste it above.");
+  }
+  const cards = (j.cards || []).filter(c => !(c.categories || []).some(x => /maybeboard|sideboard/i.test(x)))
+    .map(c => ({ name: c.card?.oracleCard?.name || c.card?.name, qty: c.quantity || 1, cmd: (c.categories || []).some(x => /^commander$/i.test(x)) }))
+    .filter(c => c.name);
+  return { name: j.name || "Archidekt deck", entries: cards };
+}
+const canLead = c => (/Legendary/.test(c.frontType) && (/Creature/.test(c.frontType) || /can be your commander/i.test(c.oracle))) || /Background/.test(c.frontType);
+
+/* ---------- Decks (saved in this browser) ---------- */
+let decks = store.get("us_decks", []);
+const saveDecks = () => store.set("us_decks", decks);
+function renderDecks(){
+  const el = $("#deckList");
+  if (!decks.length){
+    el.innerHTML = `<div class="empty">No decks yet. Paste a decklist below to get started.</div>`;
+  } else {
+    el.innerHTML = decks.map(d => `
+      <div class="deck">
+        <div class="info">
+          <div class="name">${esc(d.name)}</div>
+          <div class="meta">${d.commanders.length ? esc(d.commanders.join(" + ")) : "No commander set"}, ${d.cards.reduce((a,c)=>a+c.qty,0)} cards</div>
+        </div>
+        <button class="btn" data-scan="${d.id}">Find upgrades</button>
+        <button class="btn danger" data-del="${d.id}" aria-label="Delete ${esc(d.name)}">Delete</button>
+      </div>`).join("");
+  }
+  $("#scanDeck").innerHTML = decks.length ? decks.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join("") : `<option value="">Import a deck first</option>`;
+}
+$("#deckList").addEventListener("click", e => {
+  const s = e.target.closest("[data-scan]"), d = e.target.closest("[data-del]");
+  if (s){ $("#scanDeck").value = s.dataset.scan; showView("scan"); }
+  if (d){
+    const deck = decks.find(x => x.id === d.dataset.del);
+    if (deck && confirm(`Delete “${deck.name}”?`)){ decks = decks.filter(x => x.id !== deck.id); saveDecks(); renderDecks(); }
+  }
+});
+
+let pending = null;
+$("#importBtn").addEventListener("click", async () => {
+  const btn = $("#importBtn"), out = $("#importMsg");
+  const text = $("#deckText").value.trim(), url = $("#deckUrl").value.trim();
+  msg(out, "");
+  if (!text && !url) return msg(out, "Paste a decklist or an Archidekt link first.", true);
+  btn.disabled = true; btn.textContent = "Importing…";
+  try {
+    let name = "", entries;
+    if (text){ entries = parseList(text); }
+    else { const a = await importArchidekt(url); name = a.name; entries = a.entries; }
+    if (!entries.length) throw new Error("No cards found in that list. Each line should look like “1 Sol Ring”.");
+    const { get, missing } = await lookupCards(entries.map(e => e.name));
+    const found = entries.filter(e => get(e.name)).map(e => ({ ...e, name: get(e.name).name, card: get(e.name) }));
+    pending = { entries: found, missing };
+    $("#deckName").value = name || guessName(found);
+    const leaders = found.filter(e => canLead(e.card));
+    const pre = found.filter(e => e.cmd).map(e => e.name);
+    $("#cmdPick").innerHTML = leaders.length
+      ? leaders.map(e => `<label><input type="checkbox" value="${esc(e.name)}" ${pre.includes(e.name) ? "checked" : ""}> ${esc(e.name)}</label>`).join("")
+      : `<div class="muted small">No legendary creatures found. Upgrades will use the colors of the whole deck.</div>`;
+    msg($("#reviewMsg"),
+      `${found.reduce((a,c)=>a+c.qty,0)} cards found.` + (missing.length ? ` Couldn't find: <strong>${missing.map(esc).join(", ")}</strong>. Check the spelling and re-import if they matter.` : ""),
+      missing.length > 0);
+    $("#reviewBlock").hidden = false; $("#reviewBlock").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) { msg(out, esc(e.message), true); }
+  finally { btn.disabled = false; btn.textContent = "Import deck"; }
+});
+function guessName(found){
+  const c = found.find(e => e.cmd) || found.find(e => canLead(e.card));
+  return c ? c.name.split(",")[0] : "My deck";
+}
+$("#cmdPick").addEventListener("change", e => {
+  const boxes = $$("#cmdPick input:checked");
+  if (boxes.length > 2){ e.target.checked = false; toast("Pick up to 2 commanders"); }
+});
+$("#saveDeckBtn").addEventListener("click", () => {
+  if (!pending) return;
+  const commanders = $$("#cmdPick input:checked").map(i => i.value);
+  const deck = {
+    id: "d" + Date.now().toString(36),
+    name: $("#deckName").value.trim() || "My deck",
+    commanders,
+    cards: pending.entries.map(e => ({ name: e.name, qty: e.qty }))
+  };
+  decks.push(deck); saveDecks(); renderDecks();
+  pending = null; $("#reviewBlock").hidden = true; $("#deckText").value = ""; $("#deckUrl").value = "";
+  toast("Deck saved");
+});
+$("#cancelImportBtn").addEventListener("click", () => { pending = null; $("#reviewBlock").hidden = true; });
+
+/* ---------- Roles ---------- */
+const ROLES = [
+  { key: "lands",     label: "Lands",            noun: "land",          search: "t:land -t:basic" },
+  { key: "ramp",      label: "Ramp",             noun: "ramp",          tags: ["ramp","mana-rock","mana-dork"], extra: "-t:land" },
+  { key: "draw",      label: "Card draw",        noun: "card draw",     tags: ["draw","card-advantage"] },
+  { key: "removal",   label: "Removal",          noun: "removal",       tags: ["removal","spot-removal"] },
+  { key: "wipe",      label: "Board wipes",      noun: "board wipe",    tags: ["boardwipe","sweeper"] },
+  { key: "counter",   label: "Counterspells",    noun: "counterspell",  tags: ["counterspell"] },
+  { key: "tutor",     label: "Tutors",           noun: "tutor",         tags: ["tutor"] },
+  { key: "protect",   label: "Protection",       noun: "protection",    tags: ["protection","gives-hexproof","gives-indestructible"] },
+  { key: "recursion", label: "Recursion",        noun: "recursion",     tags: ["recursion","reanimation"] },
+  { key: "other",     label: "Threats and synergy", noun: "threat or synergy" }
+];
+// Checked in this order, so a card that is both a wipe and removal lands in wipes.
+const TAG_ORDER = ["wipe","counter","removal","ramp","draw","tutor","protect","recursion"];
+const roleOf = k => ROLES.find(r => r.key === k);
+const tagQ = tags => tags.length > 1 ? `(${tags.map(t => "otag:" + t).join(" or ")})` : `otag:${tags[0]}`;
+
+async function tagRoles(cards, onStep){
+  const cache = store.get("us_roles", {});
+  const roles = new Map();
+  let todo = [];
+  for (const c of cards){
+    if (/Land/.test(c.frontType)){ roles.set(c.name, "lands"); continue; }
+    if (cache[c.name]) roles.set(c.name, cache[c.name]); else todo.push(c);
+  }
+  for (const key of TAG_ORDER){
+    if (!todo.length) break;
+    const role = roleOf(key);
+    onStep?.(`Sorting cards by role: ${role.label.toLowerCase()}`);
+    const hit = new Set();
+    for (let i = 0; i < todo.length; i += 25){
+      const chunk = todo.slice(i, i + 25);
+      const names = chunk.map(c => `!"${c.front.replace(/"/g, "")}"`).join(" or ");
+      const res = await sfSearchSafe(`${tagQ(role.tags)} (${names})`, `otag:${role.tags[0]} (${names})`);
+      for (const r of res) hit.add(norm(r.front));
+    }
+    todo = todo.filter(c => { if (hit.has(norm(c.front))){ roles.set(c.name, key); cache[c.name] = key; return false; } return true; });
+  }
+  for (const c of todo){ roles.set(c.name, "other"); cache[c.name] = "other"; }
+  store.set("us_roles", cache);
+  return roles;
+}
+
+/* ---------- Sets ---------- */
+let SETS = null;
+async function loadSets(){
+  if (SETS) return SETS;
+  const j = await sf("https://api.scryfall.com/sets");
+  const today = new Date().toISOString().slice(0, 10);
+  const all = (j.data || []).filter(s => !s.digital && s.released_at && s.released_at <= today);
+  SETS = all.filter(s => ["expansion","core","masters","draft_innovation","commander"].includes(s.set_type) && !s.parent_set_code && s.card_count > 0)
+    .slice(0, 80)
+    .map(s => ({ code: s.code, name: s.name, date: s.released_at,
+      codes: [s.code, ...all.filter(c => c.parent_set_code === s.code && c.set_type === "commander").map(c => c.code)] }));
+  return SETS;
+}
+async function fillSets(){
+  try {
+    const sets = await loadSets();
+    $("#setSel").innerHTML = sets.map(s => `<option value="${s.code}">${esc(s.name)} (${s.date.slice(0,7)})</option>`).join("");
+  } catch { $("#setSel").innerHTML = `<option value="">Couldn't load sets. Reload to try again.</option>`; }
+}
+
+/* ---------- Scan UI ---------- */
+let mode = "set";
+$("#modes").addEventListener("click", e => {
+  const b = e.target.closest(".mode"); if (!b) return;
+  mode = b.dataset.mode;
+  $$("#modes .mode").forEach(m => m.setAttribute("aria-pressed", m === b ? "true" : "false"));
+  $("#opt-set").hidden = mode !== "set"; $("#opt-since").hidden = mode !== "since";
+});
+function yearsAgo(n){ const d = new Date(); d.setFullYear(d.getFullYear() - n); return d.toISOString().slice(0, 10); }
+$("#sinceDate").value = yearsAgo(2);
+$$(".chip[data-years]").forEach(c => c.addEventListener("click", () => { $("#sinceDate").value = yearsAgo(+c.dataset.years); }));
+function refreshEngine(){
+  const has = !!store.get("us_key", "");
+  const lab = $("#aiEngineLabel"), radio = lab.querySelector("input");
+  radio.disabled = !has; lab.classList.toggle("disabled", !has);
+  $("#aiEngineNote").innerHTML = has
+    ? "Reads the rules text and weighs synergy with your commander. Uses your own Anthropic API key."
+    : `Reads the rules text and weighs synergy with your commander. Add your Anthropic API key in <a href="#" data-goto="settings">Settings</a> to turn this on.`;
+  if (!has) $("input[name=engine][value=rules]").checked = true;
+}
+document.addEventListener("click", e => { const g = e.target.closest("[data-goto]"); if (g){ e.preventDefault(); showView(g.dataset.goto); } });
+
+function setProgress(pct, text){ $("#progress").classList.add("on"); $("#barFill").style.width = pct + "%"; $("#status").textContent = text; }
+
+/* ---------- Matching ---------- */
+const rk = c => c.rank ?? Infinity;
+const hasX = c => /\{X\}/.test(c.cost);
+function rulesCompare(role, deckRole, cands){
+  if (role.key === "other"){
+    return cands.slice(0, 6).map(c => ({ add: c, cut: null, type: "popular",
+      reason: c.rank ? `One of the most-played cards in your colors (EDHREC rank #${c.rank.toLocaleString()}). Pick your own cut.` : "New in your colors and not ranked yet. Pick your own cut." }));
+  }
+  const out = [], used = new Set();
+  for (const c of cands){
+    if (out.length >= 6) break;
+    const pool = deckRole.filter(d => !used.has(d.name));
+    if (!pool.length) break;
+    let pick = null, type = null, reason = "";
+    if (role.key !== "lands" && !hasX(c)){
+      const t = pool.filter(d => !hasX(d) && d.cmc > c.cmc && (c.rank == null || rk(c) <= rk(d) * 2));
+      if (t.length){
+        t.sort((a, b) => b.cmc - a.cmc || rk(b) - rk(a)); pick = t[0]; type = "cheaper";
+        reason = `Fills the same ${role.noun} slot for ${c.cmc} mana instead of ${pick.cmc}.`;
+      }
+    }
+    if (!pick && c.rank != null){
+      const t = pool.filter(d => (role.key === "lands" || d.cmc === c.cmc) && c.rank * 2 <= rk(d));
+      if (t.length){
+        t.sort((a, b) => rk(b) - rk(a)); pick = t[0]; type = "played";
+        reason = `${role.key === "lands" ? "Same slot" : "Same mana cost"}, played in far more Commander decks (rank #${c.rank.toLocaleString()} vs ${pick.rank ? "#" + pick.rank.toLocaleString() : "unranked"}).`;
+      }
+    }
+    if (pick){ used.add(pick.name); out.push({ add: c, cut: pick, type, reason }); }
+  }
+  return out;
+}
+
+async function askClaude(prompt){
+  const key = store.get("us_key", ""), model = store.get("us_model", DEFAULT_MODEL) || DEFAULT_MODEL;
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify({ model, max_tokens: 2000,
+      system: "You are an expert Magic: The Gathering Commander deckbuilder. You answer with only a JSON array and nothing else.",
+      messages: [{ role: "user", content: prompt }] })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error?.message || `Anthropic API returned ${r.status}`);
+  const text = (j.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+  const clean = text.replace(/```json|```/g, "").trim();
+  const s = clean.indexOf("["), e = clean.lastIndexOf("]");
+  if (s < 0 || e < 0) return [];
+  return JSON.parse(clean.slice(s, e + 1));
+}
+const line = c => `- ${c.name} | ${c.cost || "no cost"} | ${c.type}${c.usd ? ` | $${c.usd}` : ""} | ${c.oracle.replace(/\n/g, " ")}`;
+async function aiCompare(role, deckRole, cands, ctx){
+  const prompt = `Commander: ${ctx.commanders.length ? ctx.commanders.map(line).join("\n") : "none (use the deck's colors)"}
+Color identity: ${ctx.ci.join("") || "colorless"}
+Candidates are ${ctx.modeText}.${ctx.cap ? ` Budget: $${ctx.cap} or less per card.` : ""}
+
+This deck's ${role.label.toLowerCase()} cards:
+${deckRole.map(line).join("\n")}
+
+Candidate cards (not in the deck):
+${cands.map(line).join("\n")}
+
+Whole decklist, for synergy context: ${ctx.allNames.join(", ")}
+
+Pick up to 5 swaps that clearly improve this deck's ${role.noun} slots.
+- "cheaper": does the same job for less mana.
+- "stronger": same or similar mana, meaningfully better effect.
+- "synergy": a notably better fit with the commander's strategy.
+Each "cut" must be an exact name from this deck's ${role.label.toLowerCase()} list, never the commander, used at most once${role.key === "other" ? ', or null if no single card is a clear cut' : ""}. Each "add" must be an exact candidate name. Skip sidegrades; an empty array is fine.
+Answer with only JSON: [{"add":"...","cut":"...","type":"cheaper|stronger|synergy","reason":"under 25 words"}]`;
+  const arr = await askClaude(prompt);
+  const cMap = new Map(cands.map(c => [norm(c.name), c])), dMap = new Map(deckRole.map(c => [norm(c.name), c]));
+  const used = new Set(), out = [];
+  for (const s of Array.isArray(arr) ? arr : []){
+    const add = cMap.get(norm(s.add || "")); if (!add) continue;
+    const cut = s.cut ? dMap.get(norm(s.cut)) : null;
+    if (s.cut && !cut) continue;
+    if (!cut && role.key !== "other") continue;
+    if (cut && used.has(cut.name)) continue;
+    if (cut) used.add(cut.name);
+    out.push({ add, cut, type: ["cheaper","stronger","synergy"].includes(s.type) ? s.type : "stronger", reason: String(s.reason || "").slice(0, 240) });
+  }
+  return out;
+}
+
+/* ---------- Scan ---------- */
+let report = null;
+$("#runBtn").addEventListener("click", runScan);
+async function runScan(){
+  const deck = decks.find(d => d.id === $("#scanDeck").value);
+  if (!deck){ toast("Import a deck first"); showView("decks"); return; }
+  const engine = $("input[name=engine]:checked").value;
+  const capRaw = $("#priceCap").value.trim(); const cap = capRaw ? Math.max(0, +capRaw) : null;
+  let modeFilter = "", modeText = "", modeLabel = "";
+  if (mode === "set"){
+    const s = (SETS || []).find(x => x.code === $("#setSel").value);
+    if (!s){ toast("Pick a set"); return; }
+    modeFilter = `(${s.codes.map(c => "e:" + c).join(" or ")})`; modeText = `cards from ${s.name}`; modeLabel = s.name;
+  } else if (mode === "since"){
+    const d = $("#sinceDate").value; if (!d){ toast("Pick a date"); return; }
+    modeFilter = `not:reprint date>=${d}`; modeText = `new cards first printed since ${d}`; modeLabel = `New since ${d}`;
+  } else { modeText = "any Commander-legal card"; modeLabel = "Full review"; }
+
+  const btn = $("#runBtn"); btn.disabled = true; btn.textContent = "Scanning…";
+  $("#report").innerHTML = ""; report = null; updateBar();
+  try {
+    setProgress(5, "Looking up your cards");
+    const { get } = await lookupCards(deck.cards.map(c => c.name));
+    const cards = deck.cards.map(c => get(c.name)).filter(Boolean);
+    const cmdSet = new Set(deck.commanders.map(norm));
+    const commanders = cards.filter(c => cmdSet.has(norm(c.name)));
+    const ciSrc = commanders.length ? commanders : cards;
+    const ci = ["W","U","B","R","G"].filter(k => ciSrc.some(c => c.ci.includes(k)));
+    const ciStr = ci.join("").toLowerCase() || "c";
+    const body = cards.filter(c => !cmdSet.has(norm(c.name)));
+    const inDeck = new Set(cards.map(c => norm(c.name)));
+
+    setProgress(15, "Sorting cards by role");
+    let step = 0;
+    const roleMap = await tagRoles(body, t => setProgress(Math.min(45, 15 + (++step) * 4), t));
+    const byRole = new Map(ROLES.map(r => [r.key, []]));
+    for (const c of body) byRole.get(roleMap.get(c.name) || "other").push(c);
+
+    const base = `f:commander game:paper id<=${ciStr} ${modeFilter} ${cap != null ? `usd<=${cap}` : ""}`.replace(/\s+/g, " ").trim();
+    const active = ROLES.filter(r => byRole.get(r.key).length);
+    const candByRole = new Map();
+    let i = 0;
+    for (const r of active){
+      setProgress(45 + Math.round((++i / active.length) * 20), `Finding new ${r.label.toLowerCase()}`);
+      let q, fb;
+      if (r.key === "lands"){ q = `${r.search} ${base}`; }
+      else if (r.key === "other"){
+        const ex = ["ramp","draw","removal","boardwipe","counterspell","tutor"].map(t => "-otag:" + t).join(" ");
+        q = `-t:land ${ex} ${base}`; fb = `-t:land ${base}`;
+      } else { q = `${tagQ(r.tags)} ${r.extra || ""} ${base}`; fb = `otag:${r.tags[0]} ${r.extra || ""} ${base}`; }
+      const res = await sfSearchSafe(q.replace(/\s+/g, " ").trim(), fb && fb.replace(/\s+/g, " ").trim());
+      candByRole.set(r.key, res.filter(c => !inDeck.has(norm(c.name)) && c.legal === "legal").slice(0, 40));
+    }
+
+    const ctx = { commanders, ci, cap, modeText, allNames: cards.map(c => c.name) };
+    const results = new Map(); const seen = new Set(); const aiErrors = [];
+    if (engine === "ai"){
+      let done = 0;
+      const jobs = active.filter(r => candByRole.get(r.key).length);
+      const worker = async () => {
+        while (jobs.length){
+          const r = jobs.shift();
+          try { results.set(r.key, await aiCompare(r, byRole.get(r.key), candByRole.get(r.key), ctx)); }
+          catch (e){ aiErrors.push(`${r.label}: ${e.message}`); results.set(r.key, rulesCompare(r, byRole.get(r.key), candByRole.get(r.key))); }
+          setProgress(65 + Math.round((++done / Math.max(1, active.length)) * 33), `AI reviewed ${done} of ${active.length} roles`);
+        }
+      };
+      setProgress(66, "AI is reviewing candidates");
+      await Promise.all([worker(), worker(), worker()]);
+    } else {
+      for (const r of active) results.set(r.key, rulesCompare(r, byRole.get(r.key), candByRole.get(r.key) || []));
+    }
+    // One suggestion per new card across all roles
+    for (const r of ROLES){
+      const list = (results.get(r.key) || []).filter(s => { const k = norm(s.add.name); if (seen.has(k)) return false; seen.add(k); return true; });
+      results.set(r.key, list);
+    }
+    setProgress(100, "Done");
+    report = { deck, modeLabel, engine, results, picks: new Set() };
+    renderReport(aiErrors);
+  } catch (e){
+    setProgress(0, ""); $("#progress").classList.remove("on");
+    $("#report").innerHTML = `<div class="note err">${esc(e.message)}</div>`;
+  } finally { btn.disabled = false; btn.textContent = "Find upgrades"; }
+}
+
+const TYPE_LABEL = { cheaper: "Cheaper mana", stronger: "Stronger effect", synergy: "Better synergy", played: "More played", popular: "Popular pick" };
+const money = v => v ? `$${(+v).toFixed(2)}` : "No price yet";
+const swapIcon = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5h9m-3-3 3 3-3 3M13 11H4m3-3-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function renderReport(aiErrors){
+  const total = [...report.results.values()].reduce((a, l) => a + l.length, 0);
+  let html = `<div class="report-head"><h2>${total ? `${total} possible upgrade${total === 1 ? "" : "s"}` : "No clear upgrades found"}</h2>
+    <p class="muted">${esc(report.deck.name)}, ${esc(report.modeLabel)}, ${report.engine === "ai" ? "AI review" : "free matching"}.
+    ${total ? "Check the ones you want, then copy or download them for your buy list." : "Try a wider date range, a higher price cap, or Full review."}</p>
+    ${report.engine === "rules" && total ? `<p class="small muted">Free matching compares role, mana cost and popularity. It can't read rules text, so give each pick a quick look.</p>` : ""}
+    ${aiErrors.length ? `<div class="note err small">AI review failed for some roles, so free matching was used there. ${aiErrors.map(esc).join("<br>")}</div>` : ""}</div>`;
+  for (const r of ROLES){
+    const list = report.results.get(r.key) || [];
+    if (!list.length) continue;
+    html += `<div class="role"><h3>${esc(r.label)} <small>${list.length}</small></h3>`;
+    list.forEach((s, i) => {
+      const id = `${r.key}:${i}`;
+      html += `<div class="swap">
+        <div class="pair">
+          ${s.cut ? `<img class="card out" src="${esc(s.cut.img)}" alt="${esc(s.cut.name)} (cut)" loading="lazy"><span class="swapmark">${swapIcon}</span>` : ""}
+          <img class="card in ${s.cut ? "" : "solo"}" src="${esc(s.add.img)}" alt="${esc(s.add.name)}" loading="lazy">
+        </div>
+        <div class="detail">
+          <span class="tag ${s.type}">${TYPE_LABEL[s.type]}</span>
+          <h4 style="margin-top:8px">${esc(s.add.name)}<span class="price">${money(s.add.usd)}</span></h4>
+          <div class="cut">${s.cut ? `Replaces ${esc(s.cut.name)} (${s.cut.cmc} mana)` : "No direct cut suggested"}</div>
+          <div class="why">${esc(s.reason)}</div>
+          <div class="links">
+            <label class="pick"><input type="checkbox" data-pick="${id}"> Add to buy list</label>
+            <a href="${esc(s.add.uri)}" target="_blank" rel="noopener">Scryfall</a>
+            ${s.add.tcg ? `<a href="${esc(s.add.tcg)}" target="_blank" rel="noopener">TCGplayer</a>` : ""}
+          </div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  $("#report").innerHTML = html;
+  $("#report").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("#report").addEventListener("change", e => {
+  const id = e.target.dataset?.pick; if (!id || !report) return;
+  e.target.checked ? report.picks.add(id) : report.picks.delete(id);
+  updateBar();
+});
+function pickedList(){
+  if (!report) return [];
+  return [...report.picks].map(id => { const [k, i] = id.split(":"); return { role: roleOf(k), s: report.results.get(k)[+i] }; }).filter(p => p.s);
+}
+function updateBar(){
+  const p = pickedList();
+  $("#exportBar").classList.toggle("on", p.length > 0);
+  const sum = p.reduce((a, x) => a + (+x.s.add.usd || 0), 0);
+  $("#pickCount").textContent = `${p.length} picked, $${sum.toFixed(2)} total`;
+}
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); }
+  catch { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); }
+}
+$("#copyNamesBtn").addEventListener("click", async () => {
+  await copyText(pickedList().map(p => p.s.add.name).join("\n")); toast("Card names copied");
+});
+$("#csvBtn").addEventListener("click", () => {
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rows = [["Deck","Card","Price (USD)","Replaces","Role","Why","Scryfall"].map(q).join(",")];
+  for (const { role, s } of pickedList())
+    rows.push([report.deck.name, s.add.name, s.add.usd || "", s.cut?.name || "", role.label, s.reason, s.add.uri].map(q).join(","));
+  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `${report.deck.name.replace(/[^\w-]+/g, "_")}_upgrades.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+/* ---------- Settings ---------- */
+$("#apiKey").value = store.get("us_key", "");
+$("#model").value = store.get("us_model", DEFAULT_MODEL) || DEFAULT_MODEL;
+$("#saveKeyBtn").addEventListener("click", () => {
+  store.set("us_key", $("#apiKey").value.trim()); store.set("us_model", $("#model").value.trim() || DEFAULT_MODEL);
+  refreshEngine(); msg($("#keyMsg"), "Saved."); 
+});
+$("#clearKeyBtn").addEventListener("click", () => { store.del("us_key"); $("#apiKey").value = ""; refreshEngine(); msg($("#keyMsg"), "Key removed from this browser."); });
+$("#testKeyBtn").addEventListener("click", async () => {
+  store.set("us_key", $("#apiKey").value.trim()); store.set("us_model", $("#model").value.trim() || DEFAULT_MODEL); refreshEngine();
+  msg($("#keyMsg"), "Testing…");
+  try { await askClaude('Reply with exactly: ["ok"]'); msg($("#keyMsg"), "Key works. AI review is on."); }
+  catch (e){ msg($("#keyMsg"), esc(e.message), true); }
+});
+$("#clearTagsBtn").addEventListener("click", () => { store.del("us_roles"); toast("Role tags cleared"); });
+$("#exportDecksBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({ decks }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "upgrade-scraper-decks.json"; a.click();
+});
+$("#restoreFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    const incoming = (j.decks || []).filter(d => d && d.name && Array.isArray(d.cards));
+    const ids = new Set(decks.map(d => d.id));
+    decks.push(...incoming.filter(d => !ids.has(d.id))); saveDecks(); renderDecks();
+    toast(`${incoming.length} deck${incoming.length === 1 ? "" : "s"} restored`);
+  } catch { toast("That file isn't a deck backup"); }
+  e.target.value = "";
+});
+
+/* ---------- Navigation ---------- */
+function showView(v){
+  $$("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === v ? "true" : "false"));
+  $$("section.view").forEach(s => s.classList.toggle("on", s.id === "view-" + v));
+  if (v === "scan" && !SETS) fillSets();
+  if (v === "scan") refreshEngine();
+  window.scrollTo({ top: 0 });
+}
+$$("nav.tabs button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
+
+renderDecks(); refreshEngine();
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
