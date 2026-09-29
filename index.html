@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://accounts.google.com/gsi/client" async></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -106,12 +107,28 @@ textarea{min-height:170px;resize:vertical;font-size:.95rem}
 .role > h3{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
 .role > h3 small{font:600 .9rem var(--sans);color:var(--muted)}
 .swap{display:grid;grid-template-columns:auto 1fr;gap:18px;padding:18px 0;border-bottom:1px solid var(--line)}
-.pair{display:flex;align-items:center;position:relative;width:212px}
-.pair .card{width:124px;border-radius:6.5px;display:block;background:var(--panel2);aspect-ratio:488/680}
-.pair .out{width:96px;opacity:.55;transform:rotate(-6deg);filter:grayscale(.6);margin-right:-8px;z-index:0}
-.pair .in{z-index:1;box-shadow:0 0 0 2px var(--gold),0 8px 20px rgba(0,0,0,.45)}
-.pair .solo{margin-left:44px}
-.pair .swapmark{position:absolute;left:78px;top:50%;transform:translateY(-50%);z-index:2;width:30px;height:30px;border-radius:50%;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center}
+.pair{display:flex;align-items:center;gap:6px}
+.cardbtn{background:none;border:0;padding:0;cursor:zoom-in;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font-size:.85rem;font-weight:600}
+.cardbtn .card{width:112px;border-radius:6px;display:block;background:var(--panel2);aspect-ratio:488/680}
+.cardbtn.in .card{box-shadow:0 0 0 2px var(--gold)}
+.cardbtn.in .cap{color:var(--gold)}
+.cardbtn.out .card{filter:grayscale(.45) brightness(.85)}
+.cardbtn.out .cap{text-decoration:line-through;text-decoration-thickness:1.5px}
+.swapmark{width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;flex:none;margin-bottom:22px}
+.sortbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.sortbar label{font-weight:600}
+.sortbar select{width:auto;min-width:220px}
+.rolechip{display:inline-block;font-size:.85rem;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 8px;margin-left:6px}
+dialog.preview{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:18px;max-width:min(720px,calc(100vw - 24px));width:100%}
+dialog.preview::backdrop{background:rgba(10,12,16,.75)}
+.pv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:10px}
+.pv-grid figure{margin:0}
+.pv-grid img{width:100%;max-width:320px;border-radius:12px;display:block;margin:0 auto;aspect-ratio:488/680;background:var(--panel2)}
+.pv-grid figcaption{margin-top:10px;text-align:center}
+.pv-grid figcaption strong{display:block;font:700 1.1rem var(--serif)}
+.pv-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pv-head h3{margin:0}
+.hoverpv{position:fixed;z-index:50;width:260px;pointer-events:none;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.55);display:none}
 .detail h4{font:700 1.2rem/1.2 var(--serif);margin:0}
 .detail .cut{color:var(--muted);margin:3px 0 8px;font-size:.95rem}
 .detail .why{margin:8px 0 10px;max-width:60ch}
@@ -125,9 +142,13 @@ textarea{min-height:170px;resize:vertical;font-size:.95rem}
 .links{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.95rem}
 .pick{display:inline-flex;gap:8px;align-items:center;font-weight:600;cursor:pointer;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 12px}
 .pick input{width:18px;height:18px;accent-color:var(--gold)}
+.btn.slim{padding:6px 12px;font-size:.95rem}
+.btn.saved{border-color:var(--cheaper);color:var(--cheaper)}
+.sheetline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;color:var(--muted);font-size:.95rem}
+.sv-form{margin-top:12px}
 @media (max-width:560px){
   .swap{grid-template-columns:1fr}
-  .pair{margin:0 auto}
+  .pair{justify-content:center}
 }
 
 /* Export bar */
@@ -158,15 +179,13 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
 
   <!-- DECKS -->
   <section class="view on" id="view-decks">
+    <div id="sheetLine" class="sheetline" hidden></div>
     <div id="deckList" class="decks"></div>
 
     <div class="block" id="importBlock">
       <h2>Import a deck</h2>
-      <label class="f" for="deckText">Paste a decklist</label>
-      <textarea id="deckText" placeholder="1 Sol Ring&#10;1 Arcane Signet&#10;1 Command Tower&#10;...&#10;&#10;Exports from Moxfield, Archidekt, MTGGoldfish and Arena all work. Put the commander under a “Commander” line, or pick it in the next step."></textarea>
-      <div class="or">or</div>
-      <label class="f" for="deckUrl">Archidekt deck link</label>
-      <input type="url" id="deckUrl" placeholder="https://archidekt.com/decks/123456/...">
+      <label class="f" for="deckText">Paste a decklist or a deck link</label>
+      <textarea id="deckText" placeholder="https://moxfield.com/decks/...&#10;&#10;or paste the list itself:&#10;1 Sol Ring&#10;1 Arcane Signet&#10;1 Command Tower&#10;...&#10;&#10;Links from Archidekt, Moxfield and MTGGoldfish work, and so do text exports from those sites or Arena."></textarea>
       <div class="row" style="margin-top:14px">
         <button class="btn primary" id="importBtn">Import deck</button>
       </div>
@@ -235,6 +254,11 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
 
   <!-- SETTINGS -->
   <section class="view" id="view-settings">
+    <div class="block" id="sheetBlock" hidden>
+      <h2>Google Sheets buy list</h2>
+      <p class="muted">Sign in with Google and the app makes a buy list spreadsheet in your Google Drive, with a tab for each deck. Save any upgrade to it along with the card it would replace. Your decks also follow you to any device where you sign in. The app can only see the files it creates, nothing else in your Drive.</p>
+      <div id="sheetStatus"></div>
+    </div>
     <div class="block">
       <h2>AI review</h2>
       <p class="muted">AI review is optional. It runs on your own Anthropic API key, which stays in this browser and is sent only to Anthropic. A typical scan costs a few cents.</p>
@@ -265,18 +289,21 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
   <footer>
     Card data, images and prices from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>. Prices are TCGplayer market in USD and can lag.
     Upgrade Scraper is unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. Not approved or endorsed by Wizards.
-    <br><br>Find it useful? <a href="https://buymeacoffee.com/jrkline1116" target="_blank" rel="noopener">Buy me a coffee</a>.
+    <br><br><a href="privacy.html">Privacy policy</a>. Find it useful? <a href="https://buymeacoffee.com/jrkline1116" target="_blank" rel="noopener">Buy me a coffee</a>.
   </footer>
 </div>
 
 <div class="exportbar" id="exportBar">
   <div class="wrap">
     <div class="count" id="pickCount">0 picked</div>
+    <button class="btn" id="sheetPicksBtn" hidden>Save picks to sheet</button>
     <button class="btn" id="copyNamesBtn">Copy card names</button>
     <button class="btn primary" id="csvBtn">Download CSV</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<dialog class="preview" id="preview" aria-label="Card preview"></dialog>
+<img class="hoverpv" id="hoverpv" alt="">
 
 <script>
 "use strict";
@@ -293,6 +320,10 @@ const store = {
   del(k){ try{ localStorage.removeItem(k); }catch{} }
 };
 const DEFAULT_MODEL = "claude-sonnet-5-5";
+// Optional: the URL of your deployed worker.js (see README). Moxfield and MTGGoldfish links need it,
+// because those sites don't let other websites read their decks directly. Example:
+// const IMPORT_HELPER = "https://deck-import.yourname.workers.dev";
+const IMPORT_HELPER = "https://deck-import.jrkline1116.workers.dev";
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2200); }
 function msg(el, text, isErr){ el.innerHTML = text ? `<div class="note ${isErr?"err":""}">${text}</div>` : ""; }
 
@@ -325,6 +356,7 @@ async function sfSearchSafe(q, fallbackQ){
 function slim(c){
   const faces = c.card_faces || [];
   const img = c.image_uris?.normal || faces[0]?.image_uris?.normal || "";
+  const img2 = c.image_uris ? "" : (faces[1]?.image_uris?.normal || "");
   const oracle = c.oracle_text ?? faces.map(f => `${f.name}: ${f.oracle_text || ""}`).join(" // ");
   const typeLine = c.type_line || faces.map(f => f.type_line).join(" // ");
   return {
@@ -336,7 +368,7 @@ function slim(c){
     ci: c.color_identity || [],
     rank: c.edhrec_rank ?? null,
     usd: c.prices?.usd || c.prices?.usd_foil || c.prices?.usd_etched || null,
-    img, uri: c.scryfall_uri, tcg: c.purchase_uris?.tcgplayer || null,
+    img, img2, uri: c.scryfall_uri, tcg: c.purchase_uris?.tcgplayer || null,
     legal: c.legalities?.commander
   };
 }
@@ -355,18 +387,27 @@ async function lookupCards(names){
   notFound = notFound.filter(n => frontName(n) === n);
   if (retry.length) await run(retry);
   const get = n => idx.get(norm(n)) || idx.get(norm(frontName(n)));
+  // Anything still missing gets one fuzzy lookup, which forgives typos, stray characters and alternate names.
+  for (const n of names.filter(n => !get(n)).slice(0, 20)){
+    try {
+      const c = await sf("https://api.scryfall.com/cards/named?" + new URLSearchParams({ fuzzy: frontName(n) }));
+      if (c && c.object === "card"){ const s = slim(c); idx.set(norm(s.name), s); idx.set(norm(s.front), s); idx.set(norm(n), s); }
+    } catch {}
+  }
   return { get, missing: names.filter(n => !get(n)) };
 }
 
 /* ---------- Decklist parsing ---------- */
 function parseList(text){
-  const map = new Map(); let section = "main";
+  const map = new Map(); let section = "main", sec = 0, sawCard = false;
   for (const raw of text.split(/\r?\n/)){
-    let line = raw.trim(); if (!line) continue;
+    let line = raw.trim();
+    if (!line){ if (sawCard){ sec++; sawCard = false; } continue; }
     const head = line.replace(/^\/\/\s*/, "").replace(/:$/, "").trim().toLowerCase();
     if (/^commanders?$/.test(head)){ section = "cmd"; continue; }
     if (/^(deck|main|mainboard|companion|about)$/.test(head)){ section = "main"; continue; }
-    if (/^(sideboard|maybeboard|considering|tokens?)$/.test(head)){ section = "skip"; continue; }
+    if (/^sideboard$/.test(head)){ section = "side"; continue; }
+    if (/^(maybeboard|considering|tokens?)$/.test(head)){ section = "skip"; continue; }
     if (/^(\/\/|#|name\s)/i.test(line)) continue;
     if (section === "skip") continue;
     let isCmd = section === "cmd" || /\*CMDR\*|\[commander/i.test(line);
@@ -379,26 +420,88 @@ function parseList(text){
     if (!name) continue;
     const key = norm(name);
     const prev = map.get(key);
+    sawCard = true;
     if (prev){ prev.qty += qty; prev.cmd = prev.cmd || isCmd; }
-    else map.set(key, { name, qty, cmd: isCmd });
+    else map.set(key, { name, qty, cmd: isCmd, side: section === "side", sec });
   }
   return [...map.values()];
 }
-async function importArchidekt(url){
-  const id = url.match(/archidekt\.com\/(?:api\/)?decks\/(\d+)/i)?.[1];
-  if (!id) throw new Error("That doesn't look like an Archidekt deck link.");
-  let j;
-  try {
-    const r = await fetch(`https://archidekt.com/api/decks/${id}/`);
-    if (!r.ok) throw 0;
-    j = await r.json();
-  } catch {
-    throw new Error("Archidekt didn't allow a direct import from this browser. On the deck page, choose Export, copy the text, and paste it above.");
+// Fetch a deck page directly, then through the import helper if one is set up.
+async function fetchDeck(url, asJson){
+  const tries = [url];
+  if (IMPORT_HELPER) tries.push(`${IMPORT_HELPER.replace(/\/$/, "")}/?url=${encodeURIComponent(url)}`);
+  for (const u of tries){
+    try { const r = await fetch(u); if (r.ok) return asJson ? await r.json() : await r.text(); } catch {}
   }
-  const cards = (j.cards || []).filter(c => !(c.categories || []).some(x => /maybeboard|sideboard/i.test(x)))
-    .map(c => ({ name: c.card?.oracleCard?.name || c.card?.name, qty: c.quantity || 1, cmd: (c.categories || []).some(x => /^commander$/i.test(x)) }))
-    .filter(c => c.name);
-  return { name: j.name || "Archidekt deck", entries: cards };
+  return null;
+}
+const EXPORT_HELP = {
+  archidekt: "On the Archidekt deck page, choose Export, copy the text, and paste it here.",
+  moxfield: "On the Moxfield deck page, choose More, then Export, copy the text, and paste it here.",
+  goldfish: "On the MTGGoldfish deck page, choose Export, then Copy to clipboard, and paste it here."
+};
+function blocked(site){
+  return new Error(`Couldn't read that link from this browser. ${EXPORT_HELP[site]}`);
+}
+async function importFromUrl(url){
+  let m;
+  if ((m = url.match(/archidekt\.com\/(?:api\/)?decks\/(\d+)/i))){
+    const j = await fetchDeck(`https://archidekt.com/api/decks/${m[1]}/`, true);
+    if (!j) throw blocked("archidekt");
+    const entries = (j.cards || []).filter(c => !(c.categories || []).some(x => /maybeboard|sideboard/i.test(x)))
+      .map(c => ({ name: c.card?.oracleCard?.name || c.card?.name, qty: c.quantity || 1, cmd: (c.categories || []).some(x => /^commander$/i.test(x)) }))
+      .filter(c => c.name);
+    return { name: j.name || "Archidekt deck", entries };
+  }
+  if ((m = url.match(/moxfield\.com\/decks\/([\w-]+)/i))){
+    const j = await fetchDeck(`https://api2.moxfield.com/v3/decks/all/${m[1]}`, true)
+           || await fetchDeck(`https://api2.moxfield.com/v2/decks/all/${m[1]}`, true);
+    if (!j) throw blocked("moxfield");
+    // v3 keeps cards under boards.<name>.cards; v2 keeps them at the top level.
+    const board = n => j.boards?.[n]?.cards || j[n] || {};
+    const take = (b, cmd) => Object.values(board(b)).map(x => ({ name: x.card?.name, qty: x.quantity || 1, cmd })).filter(x => x.name);
+    return { name: j.name || "Moxfield deck", entries: [...take("commanders", true), ...take("companions", false), ...take("mainboard", false)] };
+  }
+  if ((m = url.match(/mtggoldfish\.com\/deck\/(?:download\/)?(\d+)/i))){
+    const t = await fetchDeck(`https://www.mtggoldfish.com/deck/download/${m[1]}`, false);
+    if (!t || /<html/i.test(t)) throw blocked("goldfish");
+    const entries = parseList(t);
+    return { name: "MTGGoldfish deck", entries };
+  }
+  if (/mtggoldfish\.com\/archetype/i.test(url)) throw new Error("That's an archetype page. Open one specific deck on MTGGoldfish and paste that link instead.");
+  throw new Error("That link isn't from Archidekt, Moxfield or MTGGoldfish. Paste the decklist text instead.");
+}
+// Works out the commander: explicit tags first, then export layout, then deck colors.
+function detectCommanders(found){
+  const L = e => canLead(e.card);
+  const pick = found.filter(e => e.cmd);
+  if (pick.length) return { names: pick.map(e => e.name), how: "import" };
+  const side = found.filter(e => e.side);
+  if (side.length && side.length <= 2 && side.every(L)) return { names: side.map(e => e.name), how: "import" };
+  const secs = [...new Set(found.map(e => e.sec || 0))].sort((a, b) => a - b);
+  if (secs.length > 1){
+    for (const s of [secs[secs.length - 1], secs[0]]){
+      const g = found.filter(e => (e.sec || 0) === s);
+      if (g.length <= 2 && g.every(L)) return { names: g.map(e => e.name), how: "import" };
+    }
+  }
+  const legends = found.filter(L);
+  const need = new Set(found.filter(e => !e.side).flatMap(e => e.card.ci));
+  const covers = arr => [...need].every(c => arr.some(e => e.card.ci.includes(c)));
+  const singles = legends.filter(e => covers([e]));
+  if (singles.length === 1) return { names: [singles[0].name], how: "colors" };
+  if (singles.length > 1){
+    const exact = singles.filter(e => e.card.ci.length === need.size);
+    if (exact.length === 1) return { names: [exact[0].name], how: "colors" };
+  }
+  if (!singles.length){
+    const pairable = legends.filter(e => /Partner|Friends forever|Choose a Background|Doctor's companion/i.test(e.card.oracle) || /Background/.test(e.card.frontType));
+    const pairs = [];
+    for (let i = 0; i < pairable.length; i++) for (let j = i + 1; j < pairable.length; j++)
+      if (covers([pairable[i], pairable[j]])) pairs.push([pairable[i].name, pairable[j].name]);
+    if (pairs.length === 1) return { names: pairs[0], how: "colors" };
+  }
+  return { names: [], how: "none" };
 }
 const canLead = c => (/Legendary/.test(c.frontType) && (/Creature/.test(c.frontType) || /can be your commander/i.test(c.oracle))) || /Background/.test(c.frontType);
 
@@ -427,34 +530,44 @@ $("#deckList").addEventListener("click", e => {
   if (s){ $("#scanDeck").value = s.dataset.scan; showView("scan"); }
   if (d){
     const deck = decks.find(x => x.id === d.dataset.del);
-    if (deck && confirm(`Delete “${deck.name}”?`)){ decks = decks.filter(x => x.id !== deck.id); saveDecks(); renderDecks(); }
+    if (deck && confirm(`Delete “${deck.name}”?${gsConnected() ? " Its tab in your Google Sheet stays, so you don't lose saved cards." : ""}`)){
+      decks = decks.filter(x => x.id !== deck.id); saveDecks(); renderDecks();
+      store.set("us_tomb", [...new Set([...store.get("us_tomb", []), deck.id])]);
+      if (gsConnected()) gsBackground(() => gsWriteApp());
+    }
   }
 });
 
 let pending = null;
 $("#importBtn").addEventListener("click", async () => {
   const btn = $("#importBtn"), out = $("#importMsg");
-  const text = $("#deckText").value.trim(), url = $("#deckUrl").value.trim();
+  const text = $("#deckText").value.trim();
+  const isLink = /^https?:\/\/\S+$/i.test(text);
   msg(out, "");
-  if (!text && !url) return msg(out, "Paste a decklist or an Archidekt link first.", true);
+  if (!text) return msg(out, "Paste a decklist or a deck link first.", true);
   btn.disabled = true; btn.textContent = "Importing…";
   try {
     let name = "", entries;
-    if (text){ entries = parseList(text); }
-    else { const a = await importArchidekt(url); name = a.name; entries = a.entries; }
+    if (isLink){ const a = await importFromUrl(text); name = a.name; entries = a.entries; }
+    else { entries = parseList(text); }
     if (!entries.length) throw new Error("No cards found in that list. Each line should look like “1 Sol Ring”.");
     const { get, missing } = await lookupCards(entries.map(e => e.name));
     const found = entries.filter(e => get(e.name)).map(e => ({ ...e, name: get(e.name).name, card: get(e.name) }));
     pending = { entries: found, missing };
     $("#deckName").value = name || guessName(found);
-    const leaders = found.filter(e => canLead(e.card));
-    const pre = found.filter(e => e.cmd).map(e => e.name);
+    const det = detectCommanders(found);
+    pending.commanders = det.names;
+    const bgOk = found.some(e => /Choose a Background/i.test(e.card.oracle));
+    const leaders = found.filter(e => (canLead(e.card) && (bgOk || !/Background/.test(e.card.frontType))) || det.names.includes(e.name))
+      .sort((a, b) => det.names.includes(b.name) - det.names.includes(a.name));
     $("#cmdPick").innerHTML = leaders.length
-      ? leaders.map(e => `<label><input type="checkbox" value="${esc(e.name)}" ${pre.includes(e.name) ? "checked" : ""}> ${esc(e.name)}</label>`).join("")
+      ? leaders.map(e => `<label><input type="checkbox" value="${esc(e.name)}" ${det.names.includes(e.name) ? "checked" : ""}> ${esc(e.name)}</label>`).join("")
       : `<div class="muted small">No legendary creatures found. Upgrades will use the colors of the whole deck.</div>`;
+    const howText = { import: "Commander found in the import.", colors: "Commander picked from the deck's colors. Check it's right.", none: "Couldn't tell which card is the commander. Pick it below." }[det.how];
+    const count = found.filter(e => !e.side || det.names.includes(e.name)).reduce((a,c)=>a+c.qty,0);
     msg($("#reviewMsg"),
-      `${found.reduce((a,c)=>a+c.qty,0)} cards found.` + (missing.length ? ` Couldn't find: <strong>${missing.map(esc).join(", ")}</strong>. Check the spelling and re-import if they matter.` : ""),
-      missing.length > 0);
+      `${count} cards found. ${howText}` + (missing.length ? ` Couldn't find: <strong>${missing.map(esc).join(", ")}</strong>. Check the spelling and re-import if they matter.` : ""),
+      missing.length > 0 || det.how === "none");
     $("#reviewBlock").hidden = false; $("#reviewBlock").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) { msg(out, esc(e.message), true); }
   finally { btn.disabled = false; btn.textContent = "Import deck"; }
@@ -474,10 +587,12 @@ $("#saveDeckBtn").addEventListener("click", () => {
     id: "d" + Date.now().toString(36),
     name: $("#deckName").value.trim() || "My deck",
     commanders,
-    cards: pending.entries.map(e => ({ name: e.name, qty: e.qty }))
+    cards: pending.entries.filter(e => !e.side || commanders.includes(e.name)).map(e => ({ name: e.name, qty: e.qty })),
+    updated: Date.now()
   };
   decks.push(deck); saveDecks(); renderDecks();
-  pending = null; $("#reviewBlock").hidden = true; $("#deckText").value = ""; $("#deckUrl").value = "";
+  if (gsConnected()) gsBackground(async () => { await gsEnsureTab(deck); await gsWriteApp(); }, "Deck saved to your sheet");
+  pending = null; $("#reviewBlock").hidden = true; $("#deckText").value = "";
   toast("Deck saved");
 });
 $("#cancelImportBtn").addEventListener("click", () => { pending = null; $("#reviewBlock").hidden = true; });
@@ -733,8 +848,8 @@ async function runScan(){
       results.set(r.key, list);
     }
     setProgress(100, "Done");
-    report = { deck, modeLabel, engine, results, picks: new Set() };
-    renderReport(aiErrors);
+    report = { deck, modeLabel, engine, results, picks: new Set(), saved: new Set(), aiErrors, sort: "role" };
+    renderReport(true);
   } catch (e){
     setProgress(0, ""); $("#progress").classList.remove("on");
     $("#report").innerHTML = `<div class="note err">${esc(e.message)}</div>`;
@@ -744,41 +859,118 @@ async function runScan(){
 const TYPE_LABEL = { cheaper: "Cheaper mana", stronger: "Stronger effect", synergy: "Better synergy", played: "More played", popular: "Popular pick" };
 const money = v => v ? `$${(+v).toFixed(2)}` : "No price yet";
 const swapIcon = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5h9m-3-3 3 3-3 3M13 11H4m3-3-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-function renderReport(aiErrors){
-  const total = [...report.results.values()].reduce((a, l) => a + l.length, 0);
+function allItems(){
+  const out = [];
+  for (const r of ROLES) (report.results.get(r.key) || []).forEach((s, i) => out.push({ id: `${r.key}:${i}`, role: r, s }));
+  return out;
+}
+const priceNum = s => s.add.usd ? +s.add.usd : null;
+function swapHTML({ id, role, s }, showRole){
+  const cutBtn = s.cut ? `<button class="cardbtn out" data-preview="${id}" aria-label="Preview ${esc(s.cut.name)}, the card to cut">
+      <img class="card" src="${esc(s.cut.img)}" alt="" loading="lazy"><span class="cap">Cut</span></button>
+    <span class="swapmark">${swapIcon}</span>` : "";
+  return `<div class="swap">
+    <div class="pair">
+      ${cutBtn}
+      <button class="cardbtn in" data-preview="${id}" aria-label="Preview ${esc(s.add.name)}, the card to add">
+        <img class="card" src="${esc(s.add.img)}" alt="" loading="lazy"><span class="cap">Add</span></button>
+    </div>
+    <div class="detail">
+      <span class="tag ${s.type}">${TYPE_LABEL[s.type]}</span>${showRole ? `<span class="rolechip">${esc(role.label)}</span>` : ""}
+      <h4 style="margin-top:8px">${esc(s.add.name)}<span class="price">${money(s.add.usd)}</span></h4>
+      <div class="cut">${s.cut ? `Replaces ${esc(s.cut.name)} (${s.cut.cmc} mana${s.cut.usd ? `, ${money(s.cut.usd)}` : ""})` : "No direct cut suggested"}</div>
+      <div class="why">${esc(s.reason)}</div>
+      <div class="links">
+        <label class="pick"><input type="checkbox" data-pick="${id}" ${report.picks.has(id) ? "checked" : ""}> Pick</label>
+        ${gsOn() ? `<button class="btn slim ${report.saved.has(id) ? "saved" : ""}" data-save="${id}">${report.saved.has(id) ? "Saved to sheet" : "Save to sheet"}</button>` : ""}
+        <a href="${esc(s.add.uri)}" target="_blank" rel="noopener">Scryfall</a>
+        ${s.add.tcg ? `<a href="${esc(s.add.tcg)}" target="_blank" rel="noopener">TCGplayer</a>` : ""}
+      </div>
+    </div>
+  </div>`;
+}
+function renderReport(scroll){
+  const items = allItems(), total = items.length, aiErrors = report.aiErrors || [];
   let html = `<div class="report-head"><h2>${total ? `${total} possible upgrade${total === 1 ? "" : "s"}` : "No clear upgrades found"}</h2>
     <p class="muted">${esc(report.deck.name)}, ${esc(report.modeLabel)}, ${report.engine === "ai" ? "AI review" : "free matching"}.
-    ${total ? "Check the ones you want, then copy or download them for your buy list." : "Try a wider date range, a higher price cap, or Full review."}</p>
+    ${total ? "Tap a card to see it full size. Check the ones you want, then copy or download them for your buy list." : "Try a wider date range, a higher price cap, or Full review."}</p>
     ${report.engine === "rules" && total ? `<p class="small muted">Free matching compares role, mana cost and popularity. It can't read rules text, so give each pick a quick look.</p>` : ""}
-    ${aiErrors.length ? `<div class="note err small">AI review failed for some roles, so free matching was used there. ${aiErrors.map(esc).join("<br>")}</div>` : ""}</div>`;
-  for (const r of ROLES){
-    const list = report.results.get(r.key) || [];
-    if (!list.length) continue;
-    html += `<div class="role"><h3>${esc(r.label)} <small>${list.length}</small></h3>`;
-    list.forEach((s, i) => {
-      const id = `${r.key}:${i}`;
-      html += `<div class="swap">
-        <div class="pair">
-          ${s.cut ? `<img class="card out" src="${esc(s.cut.img)}" alt="${esc(s.cut.name)} (cut)" loading="lazy"><span class="swapmark">${swapIcon}</span>` : ""}
-          <img class="card in ${s.cut ? "" : "solo"}" src="${esc(s.add.img)}" alt="${esc(s.add.name)}" loading="lazy">
-        </div>
-        <div class="detail">
-          <span class="tag ${s.type}">${TYPE_LABEL[s.type]}</span>
-          <h4 style="margin-top:8px">${esc(s.add.name)}<span class="price">${money(s.add.usd)}</span></h4>
-          <div class="cut">${s.cut ? `Replaces ${esc(s.cut.name)} (${s.cut.cmc} mana)` : "No direct cut suggested"}</div>
-          <div class="why">${esc(s.reason)}</div>
-          <div class="links">
-            <label class="pick"><input type="checkbox" data-pick="${id}"> Add to buy list</label>
-            <a href="${esc(s.add.uri)}" target="_blank" rel="noopener">Scryfall</a>
-            ${s.add.tcg ? `<a href="${esc(s.add.tcg)}" target="_blank" rel="noopener">TCGplayer</a>` : ""}
-          </div>
-        </div>
-      </div>`;
+    ${aiErrors.length ? `<div class="note err small">AI review failed for some roles, so free matching was used there. ${aiErrors.map(esc).join("<br>")}</div>` : ""}
+    ${total > 1 ? `<div class="sortbar"><label for="sortSel">Sort</label>
+      <select id="sortSel">
+        <option value="role" ${report.sort === "role" ? "selected" : ""}>By role</option>
+        <option value="asc" ${report.sort === "asc" ? "selected" : ""}>Price, low to high</option>
+        <option value="desc" ${report.sort === "desc" ? "selected" : ""}>Price, high to low</option>
+      </select></div>` : ""}</div>`;
+  if (report.sort === "role"){
+    for (const r of ROLES){
+      const list = items.filter(x => x.role === r);
+      if (!list.length) continue;
+      html += `<div class="role"><h3>${esc(r.label)} <small>${list.length}</small></h3>${list.map(x => swapHTML(x, false)).join("")}</div>`;
+    }
+  } else {
+    const dir = report.sort === "asc" ? 1 : -1;
+    const sorted = items.slice().sort((a, b) => {
+      const pa = priceNum(a.s), pb = priceNum(b.s);
+      if (pa == null && pb == null) return 0;
+      if (pa == null) return 1; if (pb == null) return -1;   // unpriced cards go last either way
+      return (pa - pb) * dir;
     });
-    html += `</div>`;
+    html += `<div class="role">${sorted.map(x => swapHTML(x, true)).join("")}</div>`;
   }
   $("#report").innerHTML = html;
-  $("#report").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (scroll) $("#report").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("#report").addEventListener("change", e => {
+  if (e.target.id === "sortSel"){ report.sort = e.target.value; renderReport(false); }
+});
+
+/* ---------- Card preview (tap/click opens both cards; hover shows one on desktop) ---------- */
+const findItem = id => { const [k, i] = id.split(":"); const s = report?.results.get(k)?.[+i]; return s ? { role: roleOf(k), s } : null; };
+function figure(c, label){
+  const flip = c.img2 ? `<button class="btn ghost small" data-flip="${esc(c.img)}|${esc(c.img2)}" style="margin-top:8px">Flip card</button>` : "";
+  return `<figure><img src="${esc(c.img)}" alt="${esc(c.name)}">
+    <figcaption><span class="muted small">${label}</span><strong>${esc(c.name)}</strong>
+      <span class="small">${esc(c.cost || "")} ${c.cost ? "&nbsp;" : ""}${money(c.usd)}</span><br>
+      <span class="small"><a href="${esc(c.uri)}" target="_blank" rel="noopener">Scryfall</a>${c.tcg ? ` &nbsp; <a href="${esc(c.tcg)}" target="_blank" rel="noopener">TCGplayer</a>` : ""}</span><br>${flip}
+    </figcaption></figure>`;
+}
+function openPreview(id){
+  const it = findItem(id); if (!it) return;
+  const { s } = it, d = $("#preview");
+  d.innerHTML = `<div class="pv-head"><h3>${s.cut ? "Swap" : "Suggested card"}</h3><button class="btn ghost" data-close>Close</button></div>
+    <div class="pv-grid">${s.cut ? figure(s.cut, "Cut from your deck") : ""}${figure(s.add, "Add")}</div>
+    <p class="why" style="margin:14px 0 0">${esc(s.reason)}</p>
+    ${gsOn() ? `<button class="btn primary" data-save="${id}" style="margin-top:12px">${report.saved.has(id) ? "Saved to sheet. Edit" : "Save to sheet"}</button>` : ""}`;
+  hideHover(); d.showModal();
+}
+$("#report").addEventListener("click", e => {
+  const b = e.target.closest("[data-preview]"); if (b) openPreview(b.dataset.preview);
+  const sv = e.target.closest("[data-save]"); if (sv) openSave(sv.dataset.save);
+});
+$("#preview").addEventListener("click", e => {
+  const d = $("#preview");
+  if (e.target === d || e.target.closest("[data-close]")) return d.close();
+  const sv = e.target.closest("[data-save]"); if (sv) return openSave(sv.dataset.save);
+  const ds = e.target.closest("[data-dosave]"); if (ds) return doSave(ds.dataset.dosave);
+  const f = e.target.closest("[data-flip]");
+  if (f){ const [a, b] = f.dataset.flip.split("|"); const img = f.closest("figure").querySelector("img"); img.src = img.src === a ? b : a; }
+});
+const canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
+function hideHover(){ $("#hoverpv").style.display = "none"; }
+if (canHover){
+  $("#report").addEventListener("mouseover", e => {
+    const b = e.target.closest(".cardbtn"); if (!b) return;
+    const it = findItem(b.dataset.preview); if (!it) return;
+    const c = b.classList.contains("out") ? it.s.cut : it.s.add;
+    const pv = $("#hoverpv"), r = b.getBoundingClientRect();
+    pv.src = c.img; pv.style.display = "block";
+    const left = r.right + 12 + 260 < innerWidth ? r.right + 12 : Math.max(8, r.left - 272);
+    pv.style.left = left + "px";
+    pv.style.top = Math.min(Math.max(8, r.top - 60), innerHeight - 370) + "px";
+  });
+  $("#report").addEventListener("mouseout", e => { if (e.target.closest(".cardbtn")) hideHover(); });
+  addEventListener("scroll", hideHover, { passive: true });
 }
 $("#report").addEventListener("change", e => {
   const id = e.target.dataset?.pick; if (!id || !report) return;
@@ -854,7 +1046,269 @@ function showView(v){
 }
 $$("nav.tabs button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
 
-renderDecks(); refreshEngine();
+/* ---------- Google Sheets buy list ----------
+   Uses the drive.file scope: the app can only see the spreadsheet it creates. */
+const GOOGLE_CLIENT_ID = "699290041048-q4348fgaar26q98akvq69sue7fvbrnvl.apps.googleusercontent.com";
+const SHEETS = "https://sheets.googleapis.com/v4/spreadsheets";
+const COLS = ["Card Name","Card","Replaces","Plan","Price ($)","Priority","Status","Who Wants It","Why / Notes","Mana","Type","Rules Text","Scryfall","TCGplayer","Date Added"];
+const WIDTHS = [190,80,170,110,80,90,95,120,280,90,160,360,85,95,105];
+const GS = { token: null, exp: 0, client: null, sheetId: store.get("us_gsheet", ""), email: store.get("us_gemail", "") };
+const gsOn = () => !!GOOGLE_CLIENT_ID;
+const gsConnected = () => gsOn() && !!GS.sheetId;
+const sheetUrl = gid => `https://docs.google.com/spreadsheets/d/${GS.sheetId}/edit${gid != null ? "#gid=" + gid : ""}`;
+const qt = t => `'${t.replace(/'/g, "''")}'`;
+const tabSafe = n => (String(n).replace(/[\[\]*?\/\\:]/g, " ").trim() || "Deck").slice(0, 90);
+const cellText = v => { v = String(v ?? ""); return /^[=+\-@]/.test(v) ? "'" + v : v; };
+const fq = u => String(u || "").replace(/"/g, "%22");
+
+function gsToken(forceConsent){
+  if (!forceConsent && GS.token && Date.now() < GS.exp - 60000) return Promise.resolve(GS.token);
+  return new Promise((res, rej) => {
+    if (!window.google?.accounts?.oauth2) return rej(new Error("Google sign-in didn't load. Check your connection and reload the page."));
+    if (!GS.client) GS.client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID, scope: "https://www.googleapis.com/auth/drive.file openid email", callback: () => {} });
+    GS.client.callback = r => {
+      if (r.error) return rej(new Error("Google sign-in didn't finish."));
+      if (!google.accounts.oauth2.hasGrantedAllScopes(r, "https://www.googleapis.com/auth/drive.file"))
+        return rej(new Error("The app needs permission to manage the spreadsheet it creates. Connect again and leave that box checked."));
+      GS.token = r.access_token; GS.exp = Date.now() + (+r.expires_in || 3600) * 1000; res(GS.token);
+    };
+    GS.client.error_callback = e => rej(new Error(e?.type === "popup_closed" ? "Google sign-in was closed before it finished." : "Google sign-in was blocked. Allow pop-ups for this site and try again."));
+    const cfg = { prompt: forceConsent || !GS.email ? "consent" : "" };
+    if (GS.email) cfg.login_hint = GS.email;
+    GS.client.requestAccessToken(cfg);
+  });
+}
+async function gfetch(url, opts = {}, retry = true){
+  const t = await gsToken();
+  const r = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${t}`, ...(opts.body ? { "Content-Type": "application/json" } : {}) } });
+  if (r.status === 401 && retry){ GS.token = null; return gfetch(url, opts, false); }
+  const j = r.status === 204 ? {} : await r.json().catch(() => ({}));
+  if (!r.ok){ const e = new Error(j.error?.message || `Google returned ${r.status}`); e.status = r.status; throw e; }
+  return j;
+}
+const gBatch = requests => gfetch(`${SHEETS}/${GS.sheetId}:batchUpdate`, { method: "POST", body: JSON.stringify({ requests }) });
+const gRange = r => `${SHEETS}/${GS.sheetId}/values/${encodeURIComponent(r)}`;
+
+async function gsConnect(){
+  const first = gsToken(true);      // opens the Google window right away, while the click still counts
+  await first;
+  const me = await gfetch("https://www.googleapis.com/oauth2/v3/userinfo");
+  GS.email = me.email || ""; store.set("us_gemail", GS.email);
+  const q = "appProperties has { key='upgradeScraper' and value='buylist' } and trashed=false";
+  const found = await gfetch("https://www.googleapis.com/drive/v3/files?" + new URLSearchParams({ q, fields: "files(id)", spaces: "drive" }));
+  GS.sheetId = found.files?.[0]?.id || await gsCreate();
+  store.set("us_gsheet", GS.sheetId);
+  await gsSyncDecks();
+  renderSheetStatus();
+}
+async function gsCreate(){
+  const f = await gfetch("https://www.googleapis.com/drive/v3/files", { method: "POST", body: JSON.stringify({
+    name: "MTG Buy List (Upgrade Scraper)", mimeType: "application/vnd.google-apps.spreadsheet", appProperties: { upgradeScraper: "buylist" } }) });
+  GS.sheetId = f.id;
+  const meta = await gfetch(`${SHEETS}/${f.id}?fields=sheets.properties(sheetId)`);
+  const readMe = meta.sheets[0].properties.sheetId;
+  await gBatch([
+    { updateSheetProperties: { properties: { sheetId: readMe, title: "Read Me", gridProperties: { hideGridlines: true } }, fields: "title,gridProperties.hideGridlines" } },
+    { addSheet: { properties: { title: "_app", hidden: true } } },
+    { updateDimensionProperties: { range: { sheetId: readMe, dimension: "COLUMNS", startIndex: 0, endIndex: 1 }, properties: { pixelSize: 760 }, fields: "pixelSize" } },
+    { repeatCell: { range: { sheetId: readMe, startRowIndex: 0, endRowIndex: 1 }, cell: { userEnteredFormat: { textFormat: { bold: true, fontSize: 18 } } }, fields: "userEnteredFormat.textFormat" } }
+  ]);
+  const app = location.href.split("#")[0];
+  await gfetch(gRange("'Read Me'!A1") + "?valueInputOption=USER_ENTERED", { method: "PUT", body: JSON.stringify({ values: [
+    ["MTG Buy List"],
+    ["Made by Upgrade Scraper. Every deck you import gets its own tab."],
+    ["When you save a card from the app, it lands on that deck's tab with the card it would replace."],
+    ["Plan: Swap means cut the Replaces card for it. Keep both means add it without cutting. Undecided means decide later."],
+    ["Priority, Status and Who Wants It are yours to fill in. Saving the same card again never overwrites them."],
+    ["Leave the hidden _app tab alone. It keeps your decklists in sync between devices."],
+    [""],
+    [`=HYPERLINK("${fq(app)}","Open Upgrade Scraper")`],
+    ['=HYPERLINK("https://buymeacoffee.com/jrkline1116","Buy me a coffee")']
+  ] }) });
+  return f.id;
+}
+async function gsTabs(){
+  const m = await gfetch(`${SHEETS}/${GS.sheetId}?fields=sheets.properties(sheetId,title)`);
+  return m.sheets.map(s => s.properties);
+}
+async function gsEnsureTab(deck, tabs){
+  tabs = tabs || await gsTabs();
+  const have = deck.tabId != null && tabs.find(t => t.sheetId === deck.tabId);
+  if (have) return have;
+  const base = tabSafe(deck.name); let title = base, n = 2;
+  while (tabs.some(t => t.title.toLowerCase() === title.toLowerCase())) title = `${base.slice(0, 84)} (${n++})`;
+  const r = await gBatch([{ addSheet: { properties: { title, gridProperties: { frozenRowCount: 1, rowCount: 500, columnCount: COLS.length } } } }]);
+  const sid = r.replies[0].addSheet.properties.sheetId;
+  await gfetch(gRange(`${qt(title)}!A1`) + "?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: [COLS] }) });
+  const list = (col, vals) => ({ setDataValidation: { range: { sheetId: sid, startRowIndex: 1, startColumnIndex: col, endColumnIndex: col + 1 },
+    rule: { condition: { type: "ONE_OF_LIST", values: vals.map(v => ({ userEnteredValue: v })) }, showCustomUi: true, strict: false } } });
+  await gBatch([
+    { repeatCell: { range: { sheetId: sid, startRowIndex: 0, endRowIndex: 1 }, cell: { userEnteredFormat: {
+      textFormat: { bold: true }, backgroundColor: { red: .92, green: .92, blue: .92 }, verticalAlignment: "MIDDLE", wrapStrategy: "WRAP" } },
+      fields: "userEnteredFormat(textFormat,backgroundColor,verticalAlignment,wrapStrategy)" } },
+    { repeatCell: { range: { sheetId: sid, startRowIndex: 1 }, cell: { userEnteredFormat: { verticalAlignment: "MIDDLE", wrapStrategy: "WRAP" } },
+      fields: "userEnteredFormat(verticalAlignment,wrapStrategy)" } },
+    { repeatCell: { range: { sheetId: sid, startRowIndex: 1, startColumnIndex: 4, endColumnIndex: 5 },
+      cell: { userEnteredFormat: { numberFormat: { type: "CURRENCY", pattern: "$#,##0.00" } } }, fields: "userEnteredFormat.numberFormat" } },
+    { updateDimensionProperties: { range: { sheetId: sid, dimension: "ROWS", startIndex: 1, endIndex: 500 }, properties: { pixelSize: 110 }, fields: "pixelSize" } },
+    ...WIDTHS.map((w, i) => ({ updateDimensionProperties: { range: { sheetId: sid, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 }, properties: { pixelSize: w }, fields: "pixelSize" } })),
+    list(3, ["Swap", "Keep both", "Undecided"]),
+    list(5, ["High", "Medium", "Low"]),
+    list(6, ["Want", "Ordered", "Have", "Skip"])
+  ]);
+  deck.tabId = sid; saveDecks();
+  const tab = { sheetId: sid, title }; tabs.push(tab);
+  return tab;
+}
+
+// Decks are kept in the hidden _app tab so they sync between devices.
+async function gsReadApp(){
+  let j;
+  try { j = await gfetch(gRange("_app!A2:G")); }
+  catch (e){ if (e.status !== 400) throw e; await gBatch([{ addSheet: { properties: { title: "_app", hidden: true } } }]); return []; }
+  return (j.values || []).map(r => { try {
+    return { id: r[0], name: r[1] || "", commanders: JSON.parse(r[2] || "[]"), cards: JSON.parse(r[3] || "[]").map(([name, qty]) => ({ name, qty })),
+      updated: +r[4] || 0, tabId: r[5] !== "" && r[5] != null ? +r[5] : undefined, deleted: r[6] === "deleted" };
+  } catch { return null; } }).filter(d => d && d.id);
+}
+async function gsWriteApp(){
+  const tomb = store.get("us_tomb", []);
+  const rows = [["id","name","commanders","cards","updated","tab","state"],
+    ...decks.map(d => [d.id, d.name, JSON.stringify(d.commanders || []), JSON.stringify((d.cards || []).map(c => [c.name, c.qty])), d.updated || 0, d.tabId ?? "", ""]),
+    ...tomb.map(id => [id, "", "[]", "[]", 0, "", "deleted"])];
+  await gfetch(`${SHEETS}/${GS.sheetId}/values:batchClear`, { method: "POST", body: JSON.stringify({ ranges: ["_app!A:G"] }) });
+  await gfetch(gRange("_app!A1") + "?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: rows }) });
+}
+async function gsSyncDecks(){
+  const remote = await gsReadApp();
+  const tomb = new Set(store.get("us_tomb", []));
+  remote.filter(r => r.deleted).forEach(r => tomb.add(r.id));
+  store.set("us_tomb", [...tomb]);
+  const byId = new Map();
+  for (const d of [...remote.filter(r => !r.deleted), ...decks]){
+    if (tomb.has(d.id)) continue;
+    const p = byId.get(d.id);
+    if (!p) byId.set(d.id, { ...d });
+    else { const newer = (d.updated || 0) > (p.updated || 0) ? d : p; byId.set(d.id, { ...newer, tabId: newer.tabId ?? p.tabId ?? d.tabId }); }
+  }
+  decks = [...byId.values()].map(({ deleted, ...d }) => d);
+  const tabs = await gsTabs();
+  for (const d of decks) await gsEnsureTab(d, tabs);
+  saveDecks(); renderDecks();
+  await gsWriteApp();
+}
+function gsBackground(fn, okMsg){
+  fn().then(() => { if (okMsg) toast(okMsg); renderSheetStatus(); })
+      .catch(e => toast("Google Sheet not updated: " + e.message));
+}
+
+// Saves cards to a deck's tab. Re-saving a card updates its row and leaves Priority, Status and Who Wants It alone.
+async function gsSaveCards(deck, items){
+  const tab = await gsEnsureTab(deck);
+  const col = await gfetch(gRange(`${qt(tab.title)}!A:A`));
+  const names = (col.values || []).map(r => norm(r[0] || ""));
+  const today = new Date().toISOString().slice(0, 10);
+  const updates = [], appends = [];
+  for (const { s, cutName, plan } of items){
+    const c = s.add;
+    const row = [cellText(c.name), c.img ? `=IMAGE("${fq(c.img)}")` : "", cellText(cutName || ""), plan, c.usd ? +c.usd : "",
+      null, null, null, cellText(s.reason), cellText(c.cost), cellText(c.type), cellText(c.oracle),
+      `=HYPERLINK("${fq(c.uri)}","Scryfall")`, c.tcg ? `=HYPERLINK("${fq(c.tcg)}","TCGplayer")` : "", today];
+    const at = names.findIndex((n, i) => i > 0 && n === norm(c.name));
+    if (at > 0) updates.push({ range: `${qt(tab.title)}!A${at + 1}:O${at + 1}`, values: [row] });
+    else { row[5] = "Medium"; row[6] = "Want"; row[7] = ""; appends.push(row); names.push(norm(c.name)); }
+  }
+  if (updates.length) await gfetch(`${SHEETS}/${GS.sheetId}/values:batchUpdate`, { method: "POST", body: JSON.stringify({ valueInputOption: "USER_ENTERED", data: updates }) });
+  if (appends.length) await gfetch(gRange(`${qt(tab.title)}!A1`) + ":append?valueInputOption=USER_ENTERED", { method: "POST", body: JSON.stringify({ values: appends }) });
+  return tab;
+}
+
+/* Save dialog */
+const reportDeck = () => decks.find(d => d.id === report.deck.id) || report.deck;
+async function openSave(id){
+  const it = findItem(id); if (!it) return;
+  if (!gsConnected()){
+    try { toast("Connecting to Google…"); await gsConnect(); }
+    catch (e){ toast(e.message); return; }
+  }
+  const { s } = it, d = $("#preview"), deck = reportDeck();
+  const cmd = new Set((deck.commanders || []).map(norm));
+  const options = deck.cards.map(c => c.name).filter(n => !cmd.has(norm(n))).sort((a, b) => a.localeCompare(b));
+  const plan = s.cut ? "Swap" : "Undecided";
+  d.innerHTML = `<div class="pv-head"><h3>Save to your sheet</h3><button class="btn ghost" data-close>Close</button></div>
+    <p><strong>${esc(s.add.name)}</strong> (${money(s.add.usd)}) goes on the <strong>${esc(deck.name)}</strong> tab.</p>
+    <div class="sv-form">
+      <label class="f" for="svCut">Replaces</label>
+      <select id="svCut"><option value="">Nothing, just add it</option>
+        ${options.map(n => `<option ${s.cut && norm(n) === norm(s.cut.name) ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>
+      <label class="f">Plan</label>
+      <div class="engine">
+        ${[["Swap", "Swap", "Cut the Replaces card for this one."], ["Keep both", "Keep both", "Add it and keep the other card too."], ["Undecided", "Undecided", "Save it and decide later."]]
+          .map(([v, t, sub]) => `<label><input type="radio" name="svPlan" value="${v}" ${v === plan ? "checked" : ""}><span><strong>${t}</strong><br><span class="muted small">${sub}</span></span></label>`).join("")}
+      </div>
+      <button class="btn primary big" data-dosave="${id}" style="margin-top:16px">Save to sheet</button>
+      <div id="svMsg"></div>
+    </div>`;
+  hideHover(); if (!d.open) d.showModal();
+}
+async function doSave(id){
+  const it = findItem(id); if (!it) return;
+  const btn = $("[data-dosave]"); btn.disabled = true; btn.textContent = "Saving…";
+  try {
+    const tab = await gsSaveCards(reportDeck(), [{ s: it.s, cutName: $("#svCut").value, plan: $("input[name=svPlan]:checked").value }]);
+    markSaved([id]);
+    msg($("#svMsg"), `Saved. <a href="${sheetUrl(tab.sheetId)}" target="_blank" rel="noopener">Open the ${esc(tab.title)} tab</a>`);
+    btn.textContent = "Saved";
+  } catch (e){ msg($("#svMsg"), esc(e.message), true); btn.disabled = false; btn.textContent = "Save to sheet"; }
+}
+function markSaved(ids){
+  ids.forEach(id => report.saved.add(id));
+  ids.forEach(id => $$(`#report [data-save="${id}"]`).forEach(b => { b.textContent = "Saved to sheet"; b.classList.add("saved"); }));
+}
+$("#sheetPicksBtn").addEventListener("click", async () => {
+  const picks = pickedList(); if (!picks.length) return;
+  const btn = $("#sheetPicksBtn"); btn.disabled = true;
+  try {
+    if (!gsConnected()){ toast("Connecting to Google…"); await gsConnect(); }
+    btn.textContent = "Saving…";
+    const ids = [...report.picks];
+    await gsSaveCards(reportDeck(), picks.map(p => ({ s: p.s, cutName: p.s.cut?.name || "", plan: "Undecided" })));
+    markSaved(ids); toast(`${ids.length} saved to your sheet`);
+  } catch (e){ toast(e.message); }
+  finally { btn.disabled = false; btn.textContent = "Save picks to sheet"; }
+});
+
+/* Settings status */
+function renderSheetStatus(){
+  const on = gsOn();
+  $("#sheetBlock").hidden = !on; $("#sheetPicksBtn").hidden = !on;
+  const line = $("#sheetLine");
+  line.hidden = !gsConnected();
+  if (gsConnected()) line.innerHTML = `Buy list: <a href="${sheetUrl()}" target="_blank" rel="noopener">open in Google Sheets</a>`;
+  if (!on) return;
+  $("#sheetStatus").innerHTML = gsConnected()
+    ? `<p>Connected${GS.email ? ` as <strong>${esc(GS.email)}</strong>` : ""}.</p>
+       <div class="row"><a class="btn primary" href="${sheetUrl()}" target="_blank" rel="noopener">Open buy list</a>
+       <button class="btn" id="gsSyncBtn">Sync decks now</button><button class="btn danger" id="gsOutBtn">Disconnect</button></div>`
+    : `<button class="btn primary" id="gsInBtn">Connect Google Sheets</button>`;
+}
+$("#sheetStatus").addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "gsInBtn" || t.id === "gsSyncBtn"){
+    t.disabled = true; const label = t.textContent; t.textContent = "Working…";
+    try { t.id === "gsInBtn" ? await gsConnect() : await gsSyncDecks(); toast("Your sheet is up to date"); renderSheetStatus(); }
+    catch (err){ toast(err.message); t.disabled = false; t.textContent = label; }
+  }
+  if (t.id === "gsOutBtn"){
+    if (GS.token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(GS.token, () => {});
+    GS.token = null; GS.sheetId = ""; GS.email = "";
+    store.del("us_gsheet"); store.del("us_gemail");
+    renderSheetStatus(); toast("Disconnected. Your sheet is still in your Google Drive.");
+  }
+});
+
+renderDecks(); refreshEngine(); renderSheetStatus();
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>

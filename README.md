@@ -17,7 +17,32 @@ Import your Commander decks and find upgrades from new card releases: cards that
 3. Open the Pages URL. On a phone, use "Add to Home Screen" to install it.
 
 ## Importing decks
-Paste an export from Moxfield, Archidekt, MTGGoldfish or Arena. Put your commander under a `Commander` line, or pick it after import. Archidekt links also work when Archidekt allows browser requests; if not, paste the text export.
+Paste either a deck link or the decklist itself into the one import box. Text exports from Moxfield, Archidekt, MTGGoldfish and Arena all work. Put your commander under a `Commander` line, or pick it after import.
+
+Links from Archidekt, Moxfield and MTGGoldfish work once the import helper is set up (below). Without it, only Archidekt links may work, and the app tells you how to paste the text export instead.
+
+## Import helper (optional, free)
+Moxfield and MTGGoldfish don't let other websites read their decks, so links from them need a tiny relay. `worker.js` is that relay, and it only talks to those three deck sites.
+1. Sign in at [dash.cloudflare.com](https://dash.cloudflare.com) → Workers & Pages → Create → Create Worker → name it `deck-import` → Deploy.
+2. Click Edit code, replace everything with `worker.js`, and click Deploy.
+3. Copy the worker's address (like `https://deck-import.yourname.workers.dev`).
+4. In `index.html`, set `const IMPORT_HELPER = "https://deck-import.yourname.workers.dev";` and push.
+
+The free tier covers 100,000 requests a day. Moxfield sometimes blocks automated requests; if a Moxfield link fails, paste its text export.
+
+## Google Sheets buy list (optional)
+Signed-in users get a spreadsheet in their own Google Drive with one tab per deck. They can save any upgrade to it, along with the card it replaces and a plan (Swap, Keep both, Undecided). Decks sync between devices through a hidden `_app` tab. The app uses the `drive.file` permission, so it can only see the spreadsheet it created.
+
+One-time setup for the app owner:
+1. [console.cloud.google.com](https://console.cloud.google.com) → create a project (e.g. "Upgrade Scraper").
+2. APIs & Services → Library → enable **Google Sheets API** and **Google Drive API**.
+3. Google Auth Platform (OAuth consent screen) → Get started → External. Add app name and support email.
+4. Data Access → Add scopes: `.../auth/drive.file`, `openid`, `.../auth/userinfo.email`. All three are non-sensitive, so no Google review is needed.
+5. Clients → Create client → Web application → Authorized JavaScript origins: `https://jrkline1116.github.io`. Copy the Client ID.
+6. Audience → Publish app, so anyone can sign in (in Testing mode only listed test users can).
+7. In `index.html`, set `const GOOGLE_CLIENT_ID = "<your client ID>";` and push.
+
+The Client ID is public by design; no secret goes in the app. If it's left blank, the Sheets features stay hidden.
 
 ## Data
 Card data, images and prices come from the [Scryfall API](https://scryfall.com/docs/api). Decks, role tags and your API key are saved in your browser's local storage only.
