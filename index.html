@@ -91,7 +91,7 @@ textarea{min-height:170px;resize:vertical;font-size:.95rem}
 .chip{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:4px 12px;cursor:pointer;font-size:.9rem}
 .engine{display:grid;gap:8px}
 .engine label{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;cursor:pointer}
-.engine label.disabled{opacity:.55;cursor:not-allowed}
+.keybox{margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:9px}
 .engine input{margin-top:5px}
 
 /* Progress */
@@ -243,6 +243,13 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
           <span><strong>Free</strong><br><span class="muted small">Matches cards by role, mana cost and how often they're played. Instant, no account needed.</span></span></label>
         <label id="aiEngineLabel"><input type="radio" name="engine" value="ai">
           <span><strong>AI review</strong><br><span class="muted small" id="aiEngineNote">Reads the rules text and weighs synergy with your commander. Uses your own Anthropic API key.</span></span></label>
+      </div>
+      <div class="keybox" id="aiKeyInline" hidden>
+        <label class="f" for="apiKeyInline">Anthropic API key</label>
+        <input type="password" id="apiKeyInline" placeholder="sk-ant-..." autocomplete="off">
+        <p class="small muted">Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a>. It stays in this browser and is sent only to Anthropic. A typical scan costs a few cents.</p>
+        <button class="btn primary" id="saveKeyInlineBtn">Save and test key</button>
+        <div id="keyInlineMsg"></div>
       </div>
 
       <button class="btn primary big" id="runBtn" style="margin-top:18px">Find upgrades</button>
@@ -466,15 +473,59 @@ async function importFromUrl(url){
     const t = await fetchDeck(`https://www.mtggoldfish.com/deck/download/${m[1]}`, false);
     if (!t || /<html/i.test(t)) throw blocked("goldfish");
     const entries = parseList(t);
-    return { name: "MTGGoldfish deck", entries };
+    // The download has no commander marker, so read the deck page for its Commander section and title.
+    const page = await fetchDeck(`https://www.mtggoldfish.com/deck/${m[1]}`, false).catch(() => null);
+    const info = page ? goldfishPageInfo(page) : { name: "", commanders: [] };
+    const cmd = new Set(info.commanders.map(norm));
+    if (cmd.size){
+      entries.forEach(e => { if (cmd.has(norm(e.name))){ e.cmd = true; e.side = false; } });
+      if (info.sure) for (const n of info.commanders) if (!entries.some(e => norm(e.name) === norm(n))) entries.push({ name: n, qty: 1, cmd: true, side: false, sec: 0 });
+    }
+    return { name: info.name || "MTGGoldfish deck", entries };
   }
   if (/mtggoldfish\.com\/archetype/i.test(url)) throw new Error("That's an archetype page. Open one specific deck on MTGGoldfish and paste that link instead.");
   throw new Error("That link isn't from Archidekt, Moxfield or MTGGoldfish. Paste the decklist text instead.");
 }
+// Reads the deck name and Commander section from an MTGGoldfish deck page.
+function goldfishPageInfo(html){
+  const out = { name: "", commanders: [], sure: false };
+  let doc;
+  try { doc = new DOMParser().parseFromString(html, "text/html"); } catch { return out; }
+  const h1 = doc.querySelector("h1.title, h1.deck-view-title, .deck-container h1, h1");
+  if (h1){
+    const own = [...h1.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join(" ").replace(/\s+/g, " ").trim();
+    out.name = (own || h1.textContent.split(/\s+by\s+/i)[0]).trim().slice(0, 80);
+  }
+  if (!out.name){
+    const t = (doc.querySelector('meta[property="og:title"]')?.content || doc.title || "").split(/\s+(?:by|-|\|)\s+/)[0].trim();
+    out.name = t.slice(0, 80);
+  }
+  const cardText = el => [...el.querySelectorAll("a")].map(a => a.textContent.replace(/\s+/g, " ").trim())
+    .filter(n => n && !/^\$?[\d.,]+$/.test(n) && !/^(tix|\$)/i.test(n));
+  const isCmdHead = el => /^commanders?\b/i.test(el.textContent.replace(/\s+/g, " ").trim());
+  // Table layout: a category header row, then card rows until the next header.
+  for (const head of doc.querySelectorAll("tr.deck-category-header, tr[class*=category], .deck-category-header")){
+    if (!isCmdHead(head)) continue;
+    const row = head.closest("tr") || head;
+    for (let r = row.nextElementSibling; r && !/category/i.test(r.className); r = r.nextElementSibling) out.commanders.push(...cardText(r).slice(0, 1));
+    if (out.commanders.length){ out.sure = true; break; }
+  }
+  // Other layouts: a heading or labeled block that says Commander, with card links inside or right after it.
+  if (!out.commanders.length){
+    for (const el of doc.querySelectorAll("h2, h3, h4, h5, th, .commander, [class*=commander]")){
+      if (!isCmdHead(el) && !/commander/i.test(el.className)) continue;
+      const box = el.matches("th, h2, h3, h4, h5") ? el.nextElementSibling : el;
+      if (box) out.commanders.push(...cardText(box));
+      if (out.commanders.length) break;
+    }
+  }
+  out.commanders = [...new Set(out.commanders)].slice(0, 2);
+  return out;
+}
 // Works out the commander: explicit tags first, then export layout, then deck colors.
 function detectCommanders(found){
   const L = e => canLead(e.card);
-  const pick = found.filter(e => e.cmd);
+  const tagged = found.filter(e => e.cmd), pick = tagged.filter(L).length ? tagged.filter(L) : tagged;
   if (pick.length) return { names: pick.map(e => e.name), how: "import" };
   const side = found.filter(e => e.side);
   if (side.length && side.length <= 2 && side.every(L)) return { names: side.map(e => e.name), how: "import" };
@@ -672,15 +723,25 @@ $("#modes").addEventListener("click", e => {
 function yearsAgo(n){ const d = new Date(); d.setFullYear(d.getFullYear() - n); return d.toISOString().slice(0, 10); }
 $("#sinceDate").value = yearsAgo(2);
 $$(".chip[data-years]").forEach(c => c.addEventListener("click", () => { $("#sinceDate").value = yearsAgo(+c.dataset.years); }));
+// AI review can always be picked. Without a saved key, picking it shows a key box right here.
 function refreshEngine(){
   const has = !!store.get("us_key", "");
-  const lab = $("#aiEngineLabel"), radio = lab.querySelector("input");
-  radio.disabled = !has; lab.classList.toggle("disabled", !has);
-  $("#aiEngineNote").innerHTML = has
+  const ai = $("input[name=engine][value=ai]").checked;
+  $("#aiEngineNote").textContent = has
     ? "Reads the rules text and weighs synergy with your commander. Uses your own Anthropic API key."
-    : `Reads the rules text and weighs synergy with your commander. Add your Anthropic API key in <a href="#" data-goto="settings">Settings</a> to turn this on.`;
-  if (!has) $("input[name=engine][value=rules]").checked = true;
+    : "Reads the rules text and weighs synergy with your commander. Needs your own Anthropic API key, which you can add after picking this.";
+  $("#aiKeyInline").hidden = has || !ai;
 }
+$$("input[name=engine]").forEach(r => r.addEventListener("change", refreshEngine));
+$("#saveKeyInlineBtn").addEventListener("click", async () => {
+  const key = $("#apiKeyInline").value.trim(), out = $("#keyInlineMsg"), btn = $("#saveKeyInlineBtn");
+  if (!/^sk-ant-/.test(key)) return msg(out, "That doesn't look like an Anthropic key. It starts with sk-ant-.", true);
+  store.set("us_key", key); $("#apiKey").value = key;
+  btn.disabled = true; msg(out, "Testing…");
+  try { await askClaude('Reply with exactly: ["ok"]'); msg(out, ""); $("#apiKeyInline").value = ""; refreshEngine(); toast("Key works. AI review is on."); }
+  catch (e){ store.del("us_key"); $("#apiKey").value = ""; msg(out, esc(e.message), true); }
+  finally { btn.disabled = false; }
+});
 document.addEventListener("click", e => { const g = e.target.closest("[data-goto]"); if (g){ e.preventDefault(); showView(g.dataset.goto); } });
 
 function setProgress(pct, text){ $("#progress").classList.add("on"); $("#barFill").style.width = pct + "%"; $("#status").textContent = text; }
@@ -777,6 +838,7 @@ async function runScan(){
   const deck = decks.find(d => d.id === $("#scanDeck").value);
   if (!deck){ toast("Import a deck first"); showView("decks"); return; }
   const engine = $("input[name=engine]:checked").value;
+  if (engine === "ai" && !store.get("us_key", "")){ refreshEngine(); $("#apiKeyInline").focus(); toast("Add your Anthropic API key first, or pick Free"); return; }
   const capRaw = $("#priceCap").value.trim(); const cap = capRaw ? Math.max(0, +capRaw) : null;
   let modeFilter = "", modeText = "", modeLabel = "";
   if (mode === "set"){
@@ -1229,7 +1291,7 @@ const reportDeck = () => decks.find(d => d.id === report.deck.id) || report.deck
 async function openSave(id){
   const it = findItem(id); if (!it) return;
   if (!gsConnected()){
-    try { toast("Connecting to Google…"); await gsConnect(); }
+    try { toast("Connecting to Google…"); await gsConnect(); toast("Buy list ready in your Google Drive"); }
     catch (e){ toast(e.message); return; }
   }
   const { s } = it, d = $("#preview"), deck = reportDeck();
@@ -1258,8 +1320,8 @@ async function doSave(id){
   try {
     const tab = await gsSaveCards(reportDeck(), [{ s: it.s, cutName: $("#svCut").value, plan: $("input[name=svPlan]:checked").value }]);
     markSaved([id]);
-    msg($("#svMsg"), `Saved. <a href="${sheetUrl(tab.sheetId)}" target="_blank" rel="noopener">Open the ${esc(tab.title)} tab</a>`);
-    btn.textContent = "Saved";
+    msg($("#svMsg"), `Saved to the <strong>${esc(tab.title)}</strong> tab of “MTG Buy List (Upgrade Scraper)” in your Google Drive.`);
+    btn.outerHTML = `<a class="btn primary big" href="${sheetUrl(tab.sheetId)}" target="_blank" rel="noopener" style="margin-top:16px">Open buy list in Google Sheets</a>`;
   } catch (e){ msg($("#svMsg"), esc(e.message), true); btn.disabled = false; btn.textContent = "Save to sheet"; }
 }
 function markSaved(ids){
