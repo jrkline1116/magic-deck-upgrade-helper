@@ -1,8 +1,8 @@
 // Upgrade Scraper import helper (Cloudflare Worker, free tier).
-// Lets the app read deck links from Moxfield and MTGGoldfish, which block
+// Lets the app read deck links from Moxfield and MTGGoldfish, and EDHREC commander data, which block
 // other websites from reading their decks directly. Only these hosts are allowed,
 // so it can't be used as an open proxy.
-const ALLOWED_HOSTS = ["archidekt.com", "api2.moxfield.com", "www.mtggoldfish.com"];
+const ALLOWED_HOSTS = ["archidekt.com", "api2.moxfield.com", "www.mtggoldfish.com", "json.edhrec.com"];
 const ALLOWED_ORIGIN = "https://jrkline1116.github.io";
 
 export default {

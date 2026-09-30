@@ -1,15 +1,17 @@
 # Upgrade Scraper
 
-Import your Commander decks and find upgrades from new card releases: cards that do the same job for less mana, or a stronger job for the same mana, with current prices.
+Import your Commander decks and find upgrades from new card releases, with current prices. Free, no account or API key needed.
 
 **Three modes**
 - **New set**: checks one release (plus its Commander precons) against your deck.
 - **Coming back**: every new card printed since the date you last played.
 - **Full review**: any Commander-legal card, for a deck you just built.
 
-**Two ways to judge upgrades**
-- **Free**: matches cards by role (ramp, draw, removal…), mana cost and EDHREC popularity. No account needed.
-- **AI review**: optional. Uses your own Anthropic API key, which is stored only in your browser and sent only to Anthropic.
+**How upgrades are picked**
+- **Fits your commander**: cards that EDHREC decks with your commander play a lot, swapped for the least-played card in the same role.
+- **Cheaper mana**: does the same job (ramp, draw, removal…) for less mana.
+- **More played**: same mana cost, played in far more Commander decks.
+- **Fits your theme**: brand-new cards with no play data yet are matched to your deck's themes (Auras, tokens, counters, a creature type…) by reading their rules text. Once EDHREC catches up, they move to "Fits your commander."
 
 ## Setup (GitHub Pages)
 1. Create a repo and upload `index.html`, `manifest.webmanifest`, `sw.js`, `icon-192.png`, `icon-512.png`.
@@ -22,7 +24,7 @@ Paste either a deck link or the decklist itself into the one import box. Text ex
 Links from Archidekt, Moxfield and MTGGoldfish work once the import helper is set up (below). Without it, only Archidekt links may work, and the app tells you how to paste the text export instead.
 
 ## Import helper (optional, free)
-Moxfield and MTGGoldfish don't let other websites read their decks, so links from them need a tiny relay. `worker.js` is that relay, and it only talks to those three deck sites.
+Moxfield and MTGGoldfish don't let other websites read their decks, so links from them need a tiny relay. `worker.js` is that relay. It also fetches EDHREC's commander data, and it only talks to those three deck sites and EDHREC.
 1. Sign in at [dash.cloudflare.com](https://dash.cloudflare.com) → Workers & Pages → Create → Create Worker → name it `deck-import` → Deploy.
 2. Click Edit code, replace everything with `worker.js`, and click Deploy.
 3. Copy the worker's address (like `https://deck-import.yourname.workers.dev`).
@@ -45,7 +47,7 @@ One-time setup for the app owner:
 The Client ID is public by design; no secret goes in the app. If it's left blank, the Sheets features stay hidden.
 
 ## Data
-Card data, images and prices come from the [Scryfall API](https://scryfall.com/docs/api). Decks, role tags and your API key are saved in your browser's local storage only.
+Card data, images and prices come from the [Scryfall API](https://scryfall.com/docs/api). Commander play data comes from [EDHREC](https://edhrec.com) (unofficial data, so it may change). Decks and cached card data are saved in your browser's local storage only.
 
 Unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. Not approved or endorsed by Wizards.
 

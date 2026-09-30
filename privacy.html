@@ -16,12 +16,12 @@ a{color:#D6B25E}
 <body>
 <main>
 <h1>Privacy Policy</h1>
-<p class="muted">Upgrade Scraper. Last updated September 29, 2026.</p>
+<p class="muted">Upgrade Scraper. Last updated September 30, 2026.</p>
 
 <p>Upgrade Scraper is a free web app that suggests upgrades for Magic: The Gathering Commander decks. It has no servers that store your data. Everything described below happens in your own browser or in your own Google account.</p>
 
 <h2>What stays in your browser</h2>
-<p>Your decklists, settings and, if you add one, your Anthropic API key are saved in your browser's local storage on your device. They are not sent to the app's developer. You can remove them at any time by clearing this site's data in your browser.</p>
+<p>Your decklists, settings and cached card data are saved in your browser's local storage on your device. They are not sent to the app's developer. You can remove them at any time by clearing this site's data in your browser.</p>
 
 <h2>Google sign-in (optional)</h2>
 <p>If you choose "Connect Google Sheets," the app asks Google for three permissions:</p>
@@ -33,8 +33,9 @@ a{color:#D6B25E}
 
 <h2>Other services the app talks to</h2>
 <p><strong>Scryfall</strong> (card data, images and prices): card names from your deck are sent to look them up.<br>
-<strong>Archidekt, Moxfield and MTGGoldfish</strong>: only when you paste a deck link, to read that deck. Requests may pass through a small relay that forwards them and keeps nothing.<br>
-<strong>Anthropic</strong>: only if you turn on AI review with your own API key. Your deck and candidate cards are sent to Anthropic to get suggestions.</p>
+<strong>EDHREC</strong> (what other decks with your commander play): only your commander's name is sent.<br>
+<strong>Archidekt, Moxfield and MTGGoldfish</strong>: only when you paste a deck link, to read that deck.<br>
+Requests to EDHREC and the deck sites may pass through a small relay that forwards them and keeps nothing.</p>
 
 <h2>Contact</h2>
 <p>Questions: open an issue at <a href="https://github.com/jrkline1116/magic-deck-upgrade-helper/issues" target="_blank" rel="noopener">github.com/jrkline1116/magic-deck-upgrade-helper</a>.</p>

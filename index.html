@@ -91,7 +91,7 @@ textarea{min-height:170px;resize:vertical;font-size:.95rem}
 .chip{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:4px 12px;cursor:pointer;font-size:.9rem}
 .engine{display:grid;gap:8px}
 .engine label{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;cursor:pointer}
-.keybox{margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:9px}
+
 .engine input{margin-top:5px}
 
 /* Progress */
@@ -138,6 +138,7 @@ dialog.preview::backdrop{background:rgba(10,12,16,.75)}
 .tag.stronger{color:var(--stronger)} .tag.stronger::before{transform:rotate(45deg)}
 .tag.synergy{color:var(--synergy)} .tag.synergy::before{border-radius:2px}
 .tag.played,.tag.popular{color:var(--played)} .tag.played::before,.tag.popular::before{clip-path:polygon(50% 0,100% 100%,0 100%)}
+.tag.theme{color:var(--synergy);border-style:dashed} .tag.theme::before{border-radius:2px;background:none;border:2px solid currentColor}
 .price{font-weight:700;margin-left:8px}
 .links{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.95rem}
 .pick{display:inline-flex;gap:8px;align-items:center;font-weight:600;cursor:pointer;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 12px}
@@ -168,7 +169,7 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
   <header class="top">
     <div class="brand">
       <h1>Upgrade Scraper</h1>
-      <p>Your Commander decks, checked against new cards. Cheaper mana, stronger effects, current prices.</p>
+      <p>Your Commander decks, checked against new cards. Cards other decks with your commander play, cheaper mana, current prices.</p>
     </div>
     <nav class="tabs" role="tablist">
       <button role="tab" data-view="decks" aria-selected="true">My decks</button>
@@ -237,20 +238,7 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
       <label class="f" for="priceCap">Max price per card <span class="muted small">(optional, USD)</span></label>
       <input type="number" id="priceCap" min="0" step="0.5" placeholder="No limit">
 
-      <label class="f">How to judge upgrades</label>
-      <div class="engine">
-        <label><input type="radio" name="engine" value="rules" checked>
-          <span><strong>Free</strong><br><span class="muted small">Matches cards by role, mana cost and how often they're played. Instant, no account needed.</span></span></label>
-        <label id="aiEngineLabel"><input type="radio" name="engine" value="ai">
-          <span><strong>AI review</strong><br><span class="muted small" id="aiEngineNote">Reads the rules text and weighs synergy with your commander. Uses your own Anthropic API key.</span></span></label>
-      </div>
-      <div class="keybox" id="aiKeyInline" hidden>
-        <label class="f" for="apiKeyInline">Anthropic API key</label>
-        <input type="password" id="apiKeyInline" placeholder="sk-ant-..." autocomplete="off">
-        <p class="small muted">Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a>. It stays in this browser and is sent only to Anthropic. A typical scan costs a few cents.</p>
-        <button class="btn primary" id="saveKeyInlineBtn">Save and test key</button>
-        <div id="keyInlineMsg"></div>
-      </div>
+      <p class="small muted" style="margin-top:14px">Upgrades come from what real decks with your commander play on EDHREC, plus role, mana cost and your deck's themes. Brand-new cards without play data are matched by their rules text.</p>
 
       <button class="btn primary big" id="runBtn" style="margin-top:18px">Find upgrades</button>
       <div class="progress" id="progress"><div class="bar"><i id="barFill"></i></div><div class="status" id="status"></div></div>
@@ -267,21 +255,6 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
       <div id="sheetStatus"></div>
     </div>
     <div class="block">
-      <h2>AI review</h2>
-      <p class="muted">AI review is optional. It runs on your own Anthropic API key, which stays in this browser and is sent only to Anthropic. A typical scan costs a few cents.</p>
-      <label class="f" for="apiKey">Anthropic API key</label>
-      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
-      <p class="small muted">Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a>.</p>
-      <label class="f" for="model">Model</label>
-      <input type="text" id="model">
-      <div class="row" style="margin-top:14px">
-        <button class="btn primary" id="saveKeyBtn">Save</button>
-        <button class="btn" id="testKeyBtn">Test key</button>
-        <button class="btn danger" id="clearKeyBtn">Remove key</button>
-      </div>
-      <div id="keyMsg"></div>
-    </div>
-    <div class="block">
       <h2>Stored data</h2>
       <p class="muted">Decks and card role tags are saved in this browser only. Clearing tags makes the next scan re-check each card's role.</p>
       <div class="row">
@@ -294,7 +267,7 @@ footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var
   </section>
 
   <footer>
-    Card data, images and prices from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>. Prices are TCGplayer market in USD and can lag.
+    Card data, images and prices from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>. Commander play data from <a href="https://edhrec.com" target="_blank" rel="noopener">EDHREC</a>. Prices are TCGplayer market in USD and can lag.
     Upgrade Scraper is unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. Not approved or endorsed by Wizards.
     <br><br><a href="privacy.html">Privacy policy</a>. Find it useful? <a href="https://buymeacoffee.com/jrkline1116" target="_blank" rel="noopener">Buy me a coffee</a>.
   </footer>
@@ -326,7 +299,6 @@ const store = {
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} },
   del(k){ try{ localStorage.removeItem(k); }catch{} }
 };
-const DEFAULT_MODEL = "claude-sonnet-5-5";
 // Optional: the URL of your deployed worker.js (see README). Moxfield and MTGGoldfish links need it,
 // because those sites don't let other websites read their decks directly. Example:
 // const IMPORT_HELPER = "https://deck-import.yourname.workers.dev";
@@ -375,6 +347,7 @@ function slim(c){
     ci: c.color_identity || [],
     rank: c.edhrec_rank ?? null,
     usd: c.prices?.usd || c.prices?.usd_foil || c.prices?.usd_etched || null,
+    released: c.released_at || null,
     img, img2, uri: c.scryfall_uri, tcg: c.purchase_uris?.tcgplayer || null,
     legal: c.legalities?.commander
   };
@@ -723,110 +696,164 @@ $("#modes").addEventListener("click", e => {
 function yearsAgo(n){ const d = new Date(); d.setFullYear(d.getFullYear() - n); return d.toISOString().slice(0, 10); }
 $("#sinceDate").value = yearsAgo(2);
 $$(".chip[data-years]").forEach(c => c.addEventListener("click", () => { $("#sinceDate").value = yearsAgo(+c.dataset.years); }));
-// AI review can always be picked. Without a saved key, picking it shows a key box right here.
-function refreshEngine(){
-  const has = !!store.get("us_key", "");
-  const ai = $("input[name=engine][value=ai]").checked;
-  $("#aiEngineNote").textContent = has
-    ? "Reads the rules text and weighs synergy with your commander. Uses your own Anthropic API key."
-    : "Reads the rules text and weighs synergy with your commander. Needs your own Anthropic API key, which you can add after picking this.";
-  $("#aiKeyInline").hidden = has || !ai;
-}
-$$("input[name=engine]").forEach(r => r.addEventListener("change", refreshEngine));
-$("#saveKeyInlineBtn").addEventListener("click", async () => {
-  const key = $("#apiKeyInline").value.trim(), out = $("#keyInlineMsg"), btn = $("#saveKeyInlineBtn");
-  if (!/^sk-ant-/.test(key)) return msg(out, "That doesn't look like an Anthropic key. It starts with sk-ant-.", true);
-  store.set("us_key", key); $("#apiKey").value = key;
-  btn.disabled = true; msg(out, "Testing…");
-  try { await askClaude('Reply with exactly: ["ok"]'); msg(out, ""); $("#apiKeyInline").value = ""; refreshEngine(); toast("Key works. AI review is on."); }
-  catch (e){ store.del("us_key"); $("#apiKey").value = ""; msg(out, esc(e.message), true); }
-  finally { btn.disabled = false; }
-});
+
 document.addEventListener("click", e => { const g = e.target.closest("[data-goto]"); if (g){ e.preventDefault(); showView(g.dataset.goto); } });
 
 function setProgress(pct, text){ $("#progress").classList.add("on"); $("#barFill").style.width = pct + "%"; $("#status").textContent = text; }
 
+/* ---------- EDHREC (what real decks with this commander play) ---------- */
+const slugify = n => frontName(n).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/['’,.!?:"]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+// Pulls every card entry out of an EDHREC commander page, whatever its exact layout.
+function edhrecCards(j){
+  const out = new Map();
+  const walk = o => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (!o || typeof o !== "object") return;
+    if (typeof o.name === "string" && (o.synergy != null || o.inclusion != null)){
+      const pot = +o.potential_decks || +o.num_decks_avg || 0;
+      const incl = pot ? (+o.inclusion || +o.num_decks || 0) / pot : null;
+      const k = norm(o.name), prev = out.get(k);
+      const e = { syn: o.synergy != null ? +o.synergy : null, incl: incl != null && isFinite(incl) ? Math.min(1, incl) : null };
+      if (!prev || (e.incl ?? 0) > (prev.incl ?? 0)) out.set(k, e);
+      if (/ \/\/ /.test(o.name)) out.set(norm(frontName(o.name)), e);
+    }
+    for (const v of Object.values(o)) if (v && typeof v === "object") walk(v);
+  };
+  walk(j);
+  return out;
+}
+async function loadEdhrec(commanders){
+  if (!commanders.length) return { map: new Map(), found: false };
+  const s = commanders.map(c => slugify(c.name));
+  const tries = s.length > 1 ? [s.slice().sort().join("-"), s.join("-"), s.slice().reverse().join("-")] : [s[0]];
+  const cache = store.get("us_edh", {});
+  for (const slug of [...new Set(tries)]){
+    const hit = cache[slug];
+    if (hit && Date.now() - hit.t < 86400000) return { map: new Map(hit.d), found: true, slug };
+    const j = await fetchDeck(`https://json.edhrec.com/pages/commanders/${slug}.json`, true).catch(() => null);
+    if (!j || j.redirect) continue;
+    const map = edhrecCards(j);
+    if (!map.size) continue;
+    for (const k of Object.keys(cache)) if (Date.now() - cache[k].t > 86400000) delete cache[k];
+    cache[slug] = { t: Date.now(), d: [...map] };
+    store.set("us_edh", cache);
+    return { map, found: true, slug };
+  }
+  return { map: new Map(), found: false };
+}
+
+/* ---------- Reading rules text (for cards too new to have play data) ---------- */
+const TEXT_ROLES = [
+  ["wipe", /\b(destroy|exile) (all|each) (other )?(creatures|nonland permanents|artifacts|enchantments|permanents)|all creatures get -\d|deals \d+ damage to each creature/i],
+  ["counter", /\bcounter target\b/i],
+  ["removal", /\b(destroy|exile) (up to one )?target (\w+ )?(creature|artifact|enchantment|planeswalker|permanent|nonland)|deals? (\d+|x) damage to (any target|target creature)|return target (creature|nonland permanent) to its owner'?s hand|target (creature|player)'?s? (controller )?sacrifices/i],
+  ["ramp", /\badd (\{[wubrgcx]\}|one mana|two mana|three mana|an amount of)|search your library for (a|up to \w+) (basic )?(land|forest|plains|island|swamp|mountain)/i],
+  ["draw", /\bdraws? (a|two|three|four|x|that many) cards?/i],
+  ["tutor", /search your library for an? (card|creature|artifact|enchantment|instant|sorcery|legendary|aura|equipment)/i],
+  ["protect", /\b(gains?|have|has) (hexproof|indestructible|shroud|protection)/i],
+  ["recursion", /return (target|up to|all|a|each)[^.]{0,60}from (your|a) graveyard to (your hand|the battlefield)/i]
+];
+const textRole = c => /Land/.test(c.frontType) ? "lands" : (TEXT_ROLES.find(([, re]) => re.test(c.oracle))?.[0] || "other");
+
+const THEMES = [
+  { key: "auras", label: "Auras", re: /\bAura\b|enchanted creature/ },
+  { key: "equipment", label: "Equipment", re: /\bEquip(ment|ped)?\b/ },
+  { key: "enchantments", label: "enchantments", re: /\benchantments?\b|\bEnchantment\b/ },
+  { key: "artifacts", label: "artifacts", re: /\bartifacts?\b|\bArtifact\b/ },
+  { key: "tokens", label: "tokens", re: /\bcreate[^.]*\btokens?\b/i },
+  { key: "counters", label: "+1/+1 counters", re: /\+1\/\+1 counter/ },
+  { key: "sacrifice", label: "sacrifice", re: /\bsacrifice (a|an|another|one or more)\b/i },
+  { key: "graveyard", label: "graveyard", re: /from your graveyard|\bmill\b|cards? in your graveyard/i },
+  { key: "spells", label: "instants and sorceries", re: /instant (or|and) sorcery|noncreature spell|\bInstant\b|\bSorcery\b/ },
+  { key: "lifegain", label: "lifegain", re: /\bgains? \d+ life|\blifelink\b|whenever you gain life/i },
+  { key: "landfall", label: "landfall", re: /\blandfall\b|whenever a land (you control )?enters/i },
+  { key: "blink", label: "flicker", re: /exile [^.]*then return|return (it|that card|them) to the battlefield/i },
+  { key: "combat", label: "attacking", re: /whenever [^.]{0,40}attacks|double strike|extra combat/i },
+  { key: "draw", label: "card draw", re: /whenever you draw/i }
+];
+const themeText = c => `${c.type}\n${c.oracle}`;
+// Finds the deck's strong themes: ones the commander cares about, or that at least 8 cards share.
+function deckThemes(cards, commanders){
+  const found = [];
+  for (const t of THEMES){
+    const n = cards.filter(c => t.re.test(themeText(c))).length;
+    const cmd = commanders.some(c => t.re.test(c.oracle));
+    if (cmd || n >= 8) found.push({ ...t, n, cmd });
+  }
+  // Creature types: a type the commander names, or that at least 10 creatures share.
+  const counts = new Map();
+  for (const c of cards) if (/Creature/.test(c.frontType)) for (const w of (c.frontType.split("—")[1] || "").trim().split(/\s+/).filter(Boolean)) counts.set(w, (counts.get(w) || 0) + 1);
+  for (const [w, n] of counts){
+    const cmd = commanders.some(c => new RegExp(`\\b${w}s?\\b`).test(c.oracle));
+    if (n >= 10 || (cmd && n >= 4)) found.push({ key: "type-" + w, label: w, re: new RegExp(`\\b${w}s?\\b`), n, cmd });
+  }
+  return found.sort((a, b) => b.cmd - a.cmd || b.n - a.n).slice(0, 5);
+}
+const themeFit = (c, themes) => themes.filter(t => t.re.test(themeText(c)));
+
 /* ---------- Matching ---------- */
 const rk = c => c.rank ?? Infinity;
 const hasX = c => /\{X\}/.test(c.cost);
-function rulesCompare(role, deckRole, cands){
-  if (role.key === "other"){
-    return cands.slice(0, 6).map(c => ({ add: c, cut: null, type: "popular",
-      reason: c.rank ? `One of the most-played cards in your colors (EDHREC rank #${c.rank.toLocaleString()}). Pick your own cut.` : "New in your colors and not ranked yet. Pick your own cut." }));
-  }
+const pct = x => `${Math.round(x * 100)}%`;
+const isNewCard = c => c.rank == null || (c.released && (Date.now() - Date.parse(c.released)) < 60 * 86400000);
+function compare(role, deckRole, cands, ctx){
+  const { ed, themes, cmdName } = ctx;
+  const edOf = c => ed.get(norm(c.name)) || ed.get(norm(c.front));
+  const edScore = c => { const e = edOf(c); return e ? (e.incl || 0) + Math.max(0, e.syn || 0) : -1; };
+  // Weakest card in this role: least played with this commander, then fewest theme hits, then least played overall.
+  const weakest = pool => pool.slice().sort((a, b) =>
+    ((edOf(a)?.incl ?? 0) - (edOf(b)?.incl ?? 0)) || (themeFit(a, themes).length - themeFit(b, themes).length) || (rk(b) - rk(a)))[0];
+  const sorted = cands.slice().sort((a, b) => edScore(b) - edScore(a) || themeFit(b, themes).length - themeFit(a, themes).length || rk(a) - rk(b));
   const out = [], used = new Set();
-  for (const c of cands){
+  const edNote = e => e && e.incl != null ? ` On EDHREC, ${pct(e.incl)} of ${cmdName} decks run it.` : "";
+  for (const c of sorted){
     if (out.length >= 6) break;
     const pool = deckRole.filter(d => !used.has(d.name));
-    if (!pool.length) break;
+    if (!pool.length && role.key !== "other") break;
+    const e = edOf(c), fit = themeFit(c, themes);
     let pick = null, type = null, reason = "";
-    if (role.key !== "lands" && !hasX(c)){
-      const t = pool.filter(d => !hasX(d) && d.cmc > c.cmc && (c.rank == null || rk(c) <= rk(d) * 2));
+    // 1. Same job for less mana.
+    if (role.key !== "lands" && role.key !== "other" && !hasX(c)){
+      const t = pool.filter(d => !hasX(d) && d.cmc > c.cmc && (c.rank == null || rk(c) <= rk(d) * 2) && (!e || !edOf(d) || (e.incl ?? 0) >= (edOf(d).incl ?? 0) * 0.5));
       if (t.length){
         t.sort((a, b) => b.cmc - a.cmc || rk(b) - rk(a)); pick = t[0]; type = "cheaper";
-        reason = `Fills the same ${role.noun} slot for ${c.cmc} mana instead of ${pick.cmc}.`;
+        reason = `Fills the same ${role.noun} slot for ${c.cmc} mana instead of ${pick.cmc}.${edNote(e)}`;
       }
     }
-    if (!pick && c.rank != null){
+    // 2. Played a lot with this commander.
+    if (!type && e && ((e.syn ?? 0) >= 0.1 || (e.incl ?? 0) >= 0.2)){
+      const t = pool.filter(d => (edOf(d)?.incl ?? 0) < (e.incl ?? 0) * 0.6);
+      pick = t.length ? weakest(t) : null;
+      if (pick || role.key === "other"){
+        type = "synergy";
+        reason = `${e.incl != null ? `In ${pct(e.incl)} of ${cmdName} decks on EDHREC` : `Played with ${cmdName} on EDHREC`}${(e.syn ?? 0) >= 0.05 ? `, ${pct(e.syn)} more often than in other decks of its colors` : ""}.`
+          + (pick ? ` ${pick.name} shows up in ${edOf(pick)?.incl != null ? pct(edOf(pick).incl) : "few"} of them.` : " Pick your own cut.");
+      }
+    }
+    // 3. Same mana, far more played overall.
+    if (!type && c.rank != null && role.key !== "other"){
       const t = pool.filter(d => (role.key === "lands" || d.cmc === c.cmc) && c.rank * 2 <= rk(d));
       if (t.length){
         t.sort((a, b) => rk(b) - rk(a)); pick = t[0]; type = "played";
         reason = `${role.key === "lands" ? "Same slot" : "Same mana cost"}, played in far more Commander decks (rank #${c.rank.toLocaleString()} vs ${pick.rank ? "#" + pick.rank.toLocaleString() : "unranked"}).`;
       }
     }
-    if (pick){ used.add(pick.name); out.push({ add: c, cut: pick, type, reason }); }
+    // 4. New card that fits the deck's themes, before any play data exists.
+    if (!type && !e && fit.length && isNewCard(c)){
+      pick = role.key === "other" ? null : (pool.length ? weakest(pool) : null);
+      if (pick || role.key === "other"){
+        type = "theme";
+        reason = `Fits your deck's ${fit.slice(0, 2).map(t => t.label).join(" and ")} theme. New card, so there's no play data yet. Give it a read.`
+          + (pick ? "" : " Pick your own cut.");
+      }
+    }
+    if (type){ if (pick) used.add(pick.name); out.push({ add: c, cut: pick, type, reason }); }
   }
-  return out;
-}
-
-async function askClaude(prompt){
-  const key = store.get("us_key", ""), model = store.get("us_model", DEFAULT_MODEL) || DEFAULT_MODEL;
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-    body: JSON.stringify({ model, max_tokens: 2000,
-      system: "You are an expert Magic: The Gathering Commander deckbuilder. You answer with only a JSON array and nothing else.",
-      messages: [{ role: "user", content: prompt }] })
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error?.message || `Anthropic API returned ${r.status}`);
-  const text = (j.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-  const clean = text.replace(/```json|```/g, "").trim();
-  const s = clean.indexOf("["), e = clean.lastIndexOf("]");
-  if (s < 0 || e < 0) return [];
-  return JSON.parse(clean.slice(s, e + 1));
-}
-const line = c => `- ${c.name} | ${c.cost || "no cost"} | ${c.type}${c.usd ? ` | $${c.usd}` : ""} | ${c.oracle.replace(/\n/g, " ")}`;
-async function aiCompare(role, deckRole, cands, ctx){
-  const prompt = `Commander: ${ctx.commanders.length ? ctx.commanders.map(line).join("\n") : "none (use the deck's colors)"}
-Color identity: ${ctx.ci.join("") || "colorless"}
-Candidates are ${ctx.modeText}.${ctx.cap ? ` Budget: $${ctx.cap} or less per card.` : ""}
-
-This deck's ${role.label.toLowerCase()} cards:
-${deckRole.map(line).join("\n")}
-
-Candidate cards (not in the deck):
-${cands.map(line).join("\n")}
-
-Whole decklist, for synergy context: ${ctx.allNames.join(", ")}
-
-Pick up to 5 swaps that clearly improve this deck's ${role.noun} slots.
-- "cheaper": does the same job for less mana.
-- "stronger": same or similar mana, meaningfully better effect.
-- "synergy": a notably better fit with the commander's strategy.
-Each "cut" must be an exact name from this deck's ${role.label.toLowerCase()} list, never the commander, used at most once${role.key === "other" ? ', or null if no single card is a clear cut' : ""}. Each "add" must be an exact candidate name. Skip sidegrades; an empty array is fine.
-Answer with only JSON: [{"add":"...","cut":"...","type":"cheaper|stronger|synergy","reason":"under 25 words"}]`;
-  const arr = await askClaude(prompt);
-  const cMap = new Map(cands.map(c => [norm(c.name), c])), dMap = new Map(deckRole.map(c => [norm(c.name), c]));
-  const used = new Set(), out = [];
-  for (const s of Array.isArray(arr) ? arr : []){
-    const add = cMap.get(norm(s.add || "")); if (!add) continue;
-    const cut = s.cut ? dMap.get(norm(s.cut)) : null;
-    if (s.cut && !cut) continue;
-    if (!cut && role.key !== "other") continue;
-    if (cut && used.has(cut.name)) continue;
-    if (cut) used.add(cut.name);
-    out.push({ add, cut, type: ["cheaper","stronger","synergy"].includes(s.type) ? s.type : "stronger", reason: String(s.reason || "").slice(0, 240) });
+  // Nothing matched in threats and synergy: fall back to the most-played new cards in your colors.
+  if (role.key === "other" && !out.length){
+    for (const c of cands.filter(c => c.rank != null).slice(0, 4))
+      out.push({ add: c, cut: null, type: "popular", reason: `One of the most-played cards in your colors (EDHREC rank #${c.rank.toLocaleString()}). Pick your own cut.` });
   }
   return out;
 }
@@ -837,18 +864,16 @@ $("#runBtn").addEventListener("click", runScan);
 async function runScan(){
   const deck = decks.find(d => d.id === $("#scanDeck").value);
   if (!deck){ toast("Import a deck first"); showView("decks"); return; }
-  const engine = $("input[name=engine]:checked").value;
-  if (engine === "ai" && !store.get("us_key", "")){ refreshEngine(); $("#apiKeyInline").focus(); toast("Add your Anthropic API key first, or pick Free"); return; }
   const capRaw = $("#priceCap").value.trim(); const cap = capRaw ? Math.max(0, +capRaw) : null;
-  let modeFilter = "", modeText = "", modeLabel = "";
+  let modeFilter = "", modeLabel = "";
   if (mode === "set"){
     const s = (SETS || []).find(x => x.code === $("#setSel").value);
     if (!s){ toast("Pick a set"); return; }
-    modeFilter = `(${s.codes.map(c => "e:" + c).join(" or ")})`; modeText = `cards from ${s.name}`; modeLabel = s.name;
+    modeFilter = `(${s.codes.map(c => "e:" + c).join(" or ")})`; modeLabel = s.name;
   } else if (mode === "since"){
     const d = $("#sinceDate").value; if (!d){ toast("Pick a date"); return; }
-    modeFilter = `not:reprint date>=${d}`; modeText = `new cards first printed since ${d}`; modeLabel = `New since ${d}`;
-  } else { modeText = "any Commander-legal card"; modeLabel = "Full review"; }
+    modeFilter = `not:reprint date>=${d}`; modeLabel = `New since ${d}`;
+  } else { modeLabel = "Full review"; }
 
   const btn = $("#runBtn"); btn.disabled = true; btn.textContent = "Scanning…";
   $("#report").innerHTML = ""; report = null; updateBar();
@@ -864,18 +889,25 @@ async function runScan(){
     const body = cards.filter(c => !cmdSet.has(norm(c.name)));
     const inDeck = new Set(cards.map(c => norm(c.name)));
 
+    setProgress(10, "Checking what other decks with your commander play");
+    const edh = await loadEdhrec(commanders);
+    const themes = deckThemes(body, commanders);
+    const cmdName = commanders.length ? commanders.map(c => c.front.split(",")[0]).join(" + ") : "similar";
+
     setProgress(15, "Sorting cards by role");
     let step = 0;
-    const roleMap = await tagRoles(body, t => setProgress(Math.min(45, 15 + (++step) * 4), t));
+    const roleMap = await tagRoles(body, t => setProgress(Math.min(40, 15 + (++step) * 3), t));
     const byRole = new Map(ROLES.map(r => [r.key, []]));
     for (const c of body) byRole.get(roleMap.get(c.name) || "other").push(c);
 
     const base = `f:commander game:paper id<=${ciStr} ${modeFilter} ${cap != null ? `usd<=${cap}` : ""}`.replace(/\s+/g, " ").trim();
-    const active = ROLES.filter(r => byRole.get(r.key).length);
-    const candByRole = new Map();
+    const active = ROLES.filter(r => byRole.get(r.key).length || r.key === "other");
+    const candByRole = new Map(ROLES.map(r => [r.key, []]));
+    const seenCand = new Set();
+    const addCand = (key, c) => { const k = norm(c.name); if (inDeck.has(k) || seenCand.has(k) || c.legal !== "legal") return; seenCand.add(k); candByRole.get(key)?.push(c); };
     let i = 0;
     for (const r of active){
-      setProgress(45 + Math.round((++i / active.length) * 20), `Finding new ${r.label.toLowerCase()}`);
+      setProgress(40 + Math.round((++i / active.length) * 25), `Finding new ${r.label.toLowerCase()}`);
       let q, fb;
       if (r.key === "lands"){ q = `${r.search} ${base}`; }
       else if (r.key === "other"){
@@ -883,34 +915,36 @@ async function runScan(){
         q = `-t:land ${ex} ${base}`; fb = `-t:land ${base}`;
       } else { q = `${tagQ(r.tags)} ${r.extra || ""} ${base}`; fb = `otag:${r.tags[0]} ${r.extra || ""} ${base}`; }
       const res = await sfSearchSafe(q.replace(/\s+/g, " ").trim(), fb && fb.replace(/\s+/g, " ").trim());
-      candByRole.set(r.key, res.filter(c => !inDeck.has(norm(c.name)) && c.legal === "legal").slice(0, 40));
+      res.slice(0, 40).forEach(c => addCand(r.key, c));
+    }
+    // New releases often aren't tagged by role yet, so read their text instead.
+    if (mode !== "all"){
+      setProgress(68, "Reading brand-new cards");
+      const res = await sfSearch(`-t:basic ${base}`);
+      res.forEach(c => { const k = textRole(c); addCand(candByRole.has(k) && (byRole.get(k).length || k === "other") ? k : "other", c); });
+    }
+    // Cards that decks with this commander play a lot, even if Scryfall filed them under another role.
+    if (edh.found){
+      setProgress(75, "Adding cards popular with your commander");
+      const top = [...edh.map].filter(([k, e]) => !inDeck.has(k) && !seenCand.has(k) && ((e.syn ?? 0) >= 0.1 || (e.incl ?? 0) >= 0.2))
+        .sort((a, b) => ((b[1].incl || 0) + (b[1].syn || 0)) - ((a[1].incl || 0) + (a[1].syn || 0))).slice(0, 75).map(([k]) => k);
+      for (let j = 0; j < top.length; j += 25){
+        const names = top.slice(j, j + 25).map(k => `!"${k.replace(/"/g, "")}"`).join(" or ");
+        const res = await sfSearch(`(${names}) ${base}`).catch(() => []);
+        res.forEach(c => { const k = textRole(c); addCand(byRole.get(k)?.length ? k : "other", c); });
+      }
     }
 
-    const ctx = { commanders, ci, cap, modeText, allNames: cards.map(c => c.name) };
-    const results = new Map(); const seen = new Set(); const aiErrors = [];
-    if (engine === "ai"){
-      let done = 0;
-      const jobs = active.filter(r => candByRole.get(r.key).length);
-      const worker = async () => {
-        while (jobs.length){
-          const r = jobs.shift();
-          try { results.set(r.key, await aiCompare(r, byRole.get(r.key), candByRole.get(r.key), ctx)); }
-          catch (e){ aiErrors.push(`${r.label}: ${e.message}`); results.set(r.key, rulesCompare(r, byRole.get(r.key), candByRole.get(r.key))); }
-          setProgress(65 + Math.round((++done / Math.max(1, active.length)) * 33), `AI reviewed ${done} of ${active.length} roles`);
-        }
-      };
-      setProgress(66, "AI is reviewing candidates");
-      await Promise.all([worker(), worker(), worker()]);
-    } else {
-      for (const r of active) results.set(r.key, rulesCompare(r, byRole.get(r.key), candByRole.get(r.key) || []));
-    }
-    // One suggestion per new card across all roles
+    setProgress(92, "Comparing cards");
+    const ctx = { ed: edh.map, themes, cmdName };
+    const results = new Map(), seen = new Set();
+    for (const r of active) results.set(r.key, compare(r, byRole.get(r.key), candByRole.get(r.key), ctx));
     for (const r of ROLES){
       const list = (results.get(r.key) || []).filter(s => { const k = norm(s.add.name); if (seen.has(k)) return false; seen.add(k); return true; });
       results.set(r.key, list);
     }
     setProgress(100, "Done");
-    report = { deck, modeLabel, engine, results, picks: new Set(), saved: new Set(), aiErrors, sort: "role" };
+    report = { deck, modeLabel, results, picks: new Set(), saved: new Set(), sort: "role", edhFound: edh.found, hasCmd: commanders.length > 0, themes: themes.map(t => t.label) };
     renderReport(true);
   } catch (e){
     setProgress(0, ""); $("#progress").classList.remove("on");
@@ -918,7 +952,7 @@ async function runScan(){
   } finally { btn.disabled = false; btn.textContent = "Find upgrades"; }
 }
 
-const TYPE_LABEL = { cheaper: "Cheaper mana", stronger: "Stronger effect", synergy: "Better synergy", played: "More played", popular: "Popular pick" };
+const TYPE_LABEL = { cheaper: "Cheaper mana", synergy: "Fits your commander", theme: "Fits your theme", played: "More played", popular: "Popular pick" };
 const money = v => v ? `$${(+v).toFixed(2)}` : "No price yet";
 const swapIcon = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 5h9m-3-3 3 3-3 3M13 11H4m3-3-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function allItems(){
@@ -952,12 +986,12 @@ function swapHTML({ id, role, s }, showRole){
   </div>`;
 }
 function renderReport(scroll){
-  const items = allItems(), total = items.length, aiErrors = report.aiErrors || [];
+  const items = allItems(), total = items.length;
   let html = `<div class="report-head"><h2>${total ? `${total} possible upgrade${total === 1 ? "" : "s"}` : "No clear upgrades found"}</h2>
-    <p class="muted">${esc(report.deck.name)}, ${esc(report.modeLabel)}, ${report.engine === "ai" ? "AI review" : "free matching"}.
+    <p class="muted">${esc(report.deck.name)}, ${esc(report.modeLabel)}, ${report.edhFound ? "compared with EDHREC decks for your commander" : "matched by role, mana cost and popularity"}.
     ${total ? "Tap a card to see it full size. Check the ones you want, then copy or download them for your buy list." : "Try a wider date range, a higher price cap, or Full review."}</p>
-    ${report.engine === "rules" && total ? `<p class="small muted">Free matching compares role, mana cost and popularity. It can't read rules text, so give each pick a quick look.</p>` : ""}
-    ${aiErrors.length ? `<div class="note err small">AI review failed for some roles, so free matching was used there. ${aiErrors.map(esc).join("<br>")}</div>` : ""}
+    ${total && !report.edhFound ? `<p class="small muted">${report.hasCmd ? "Couldn't load EDHREC data for this commander, so picks" : "No commander is set, so picks"} are based on role, mana cost, popularity${report.themes.length ? " and your deck's themes" : ""}. Give each one a quick look.</p>` : ""}
+    ${report.themes.length ? `<p class="small muted">Deck themes found: ${report.themes.map(esc).join(", ")}.</p>` : ""}
     ${total > 1 ? `<div class="sortbar"><label for="sortSel">Sort</label>
       <select id="sortSel">
         <option value="role" ${report.sort === "role" ? "selected" : ""}>By role</option>
@@ -1068,19 +1102,6 @@ $("#csvBtn").addEventListener("click", () => {
 });
 
 /* ---------- Settings ---------- */
-$("#apiKey").value = store.get("us_key", "");
-$("#model").value = store.get("us_model", DEFAULT_MODEL) || DEFAULT_MODEL;
-$("#saveKeyBtn").addEventListener("click", () => {
-  store.set("us_key", $("#apiKey").value.trim()); store.set("us_model", $("#model").value.trim() || DEFAULT_MODEL);
-  refreshEngine(); msg($("#keyMsg"), "Saved."); 
-});
-$("#clearKeyBtn").addEventListener("click", () => { store.del("us_key"); $("#apiKey").value = ""; refreshEngine(); msg($("#keyMsg"), "Key removed from this browser."); });
-$("#testKeyBtn").addEventListener("click", async () => {
-  store.set("us_key", $("#apiKey").value.trim()); store.set("us_model", $("#model").value.trim() || DEFAULT_MODEL); refreshEngine();
-  msg($("#keyMsg"), "Testing…");
-  try { await askClaude('Reply with exactly: ["ok"]'); msg($("#keyMsg"), "Key works. AI review is on."); }
-  catch (e){ msg($("#keyMsg"), esc(e.message), true); }
-});
 $("#clearTagsBtn").addEventListener("click", () => { store.del("us_roles"); toast("Role tags cleared"); });
 $("#exportDecksBtn").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify({ decks }, null, 2)], { type: "application/json" });
@@ -1103,7 +1124,6 @@ function showView(v){
   $$("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === v ? "true" : "false"));
   $$("section.view").forEach(s => s.classList.toggle("on", s.id === "view-" + v));
   if (v === "scan" && !SETS) fillSets();
-  if (v === "scan") refreshEngine();
   window.scrollTo({ top: 0 });
 }
 $$("nav.tabs button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
@@ -1370,7 +1390,8 @@ $("#sheetStatus").addEventListener("click", async e => {
   }
 });
 
-renderDecks(); refreshEngine(); renderSheetStatus();
+store.del("us_key"); store.del("us_model");   // left over from the old AI option
+renderDecks(); renderSheetStatus();
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
